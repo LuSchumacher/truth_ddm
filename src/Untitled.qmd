@@ -1,0 +1,10 @@
+---
+title: "Untitled"
+format: pdf
+---
+
+```{r}
+x <- 1:5
+y
+```
+
