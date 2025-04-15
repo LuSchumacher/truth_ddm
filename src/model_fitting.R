@@ -35,7 +35,7 @@ PARAM_NAMES <- c(
 )
 
 m_full <- cmdstan_model(
-  '../model/model_new.stan',
+  '../model/full_model.stan',
   cpp_options = list(stan_threads = T)
 )
 
@@ -70,7 +70,7 @@ fit_session_1 <- m_full$sample(
   init = init_fun(),
   max_treedepth = 10,
   adapt_delta = 0.9,
-  refresh = 10,
+  refresh = 25,
   iter_sampling = 2000,
   iter_warmup = 2000,
   chains = 4,

@@ -12,15 +12,14 @@ df %<>%
   ) %>% 
   rename(
     stim_type = statement_type,
-    correct_resp = factual_truth,
     resp = responses,
     rt = dur_trial
   ) %>% 
   mutate(
     stim_type = as.factor(stim_type),
-    correct_resp = ifelse(correct_resp == 'true', 1, 0)
+    factual_truth = ifelse(factual_truth == 'true', 1, 0)
   ) %>% 
-  mutate(correct = ifelse(correct_resp == resp, 1, 0)) %>% 
+  mutate(correct = ifelse(factual_truth == resp, 1, 0)) %>% 
   filter(rt > 0) %>% 
   group_by(id) %>% 
   filter(
