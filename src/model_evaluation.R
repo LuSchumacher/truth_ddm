@@ -116,6 +116,12 @@ ggsave(
   width = 12, height = 6
 )
 
+mean((s1_post_samples$value[s1_post_samples$parameter == 'mu[v]' & s1_post_samples$condition == 1] +
+  s1_post_samples$value[s1_post_samples$parameter == 'mu[v]' & s1_post_samples$condition == 2]) / 2)
+
+mean(c(0.27, 0.02))
+mean(c(0.32, 0.02))
+
 ## Contrasts
 contrast_df_s1 <- tibble()
 for (name in unique(s1_post_samples$parameter)){
@@ -127,7 +133,7 @@ for (name in unique(s1_post_samples$parameter)){
   # main effect factual truth
   effect_truth <- ((s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 1] +
                       s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 2]) / 2) -
-    ((s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 2] +
+    ((s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 3] +
         s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 4]) / 2)
   # interaction
   effect_interaction <- ((s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 1] +
@@ -251,7 +257,7 @@ for (name in unique(s2_post_samples$parameter)){
   # main effect factual truth
   effect_truth <- ((s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 1] +
                       s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 2]) / 2) -
-    ((s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 2] +
+    ((s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 3] +
         s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 4]) / 2)
   # interaction
   effect_interaction <- ((s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 1] +
@@ -427,7 +433,7 @@ for (name in unique(exp2_post_samples$parameter)){
   # main effect factual truth
   effect_truth <- ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 1] +
                       exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 2]) / 2) -
-    ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 2] +
+    ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 3] +
         exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 4]) / 2)
   # interaction
   effect_interaction <- ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 1] +
