@@ -29,6 +29,8 @@ custom_labeller <- labeller(
   effect = label_value
 )
 
+fit_session_2$summary(variables = param_names)
+
 #------------------------------------------------------------------------------#
 # Session 1
 #------------------------------------------------------------------------------#
@@ -64,6 +66,19 @@ s1_post_samples <- s1_post_samples %>%
     labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
     )
   )
+
+post_summaries_session_1 <- s1_post_samples %>%
+  group_by(parameter, condition) %>%
+  summarise(
+    median = median(value),
+    q5 = quantile(value, probs = 0.025),
+    q95 = quantile(value, probs = 0.975),
+    .groups = "drop"
+  )  %>% 
+  ungroup() %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
+
+write_csv(post_summaries_session_1, "../data/post_summaries_session_1.csv")
 
 estimates_plot_s1 <- s1_post_samples %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
@@ -175,6 +190,19 @@ s2_post_samples <- s2_post_samples %>%
     labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
   )
   )
+
+post_summaries_session_2 <- s2_post_samples %>%
+  group_by(parameter, condition) %>%
+  summarise(
+    median = median(value),
+    q5 = quantile(value, probs = 0.025),
+    q95 = quantile(value, probs = 0.975),
+    .groups = "drop"
+  )  %>% 
+  ungroup() %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
+
+write_csv(post_summaries_session_2, "../data/post_summaries_session_2.csv")
 
 estimates_plot_s2 <- s2_post_samples %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
@@ -338,6 +366,19 @@ exp2_post_samples <- exp2_post_samples %>%
     labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
   )
   )
+
+post_summaries_exp_2 <- exp2_post_samples %>%
+  group_by(parameter, condition) %>%
+  summarise(
+    median = median(value),
+    q5 = quantile(value, probs = 0.025),
+    q95 = quantile(value, probs = 0.975),
+    .groups = "drop"
+  )  %>% 
+  ungroup() %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
+
+write_csv(post_summaries_exp_2, "../data/post_summaries_exp_2.csv")
 
 estimates_plot_exp2 <- exp2_post_samples %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
