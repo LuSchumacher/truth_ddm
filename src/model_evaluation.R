@@ -8,8 +8,9 @@ library(flextable)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-fit_session_1 <- readRDS("../fits/session_1_full_model")
-fit_session_2 <- readRDS("../fits/session_2_full_model")
+fit_session_1 <- readRDS("../fits/fit_session_1")
+fit_session_2 <- readRDS("../fits/fit_session_2")
+fit_exp_2 <- readRDS("../fits/fit_exp_2")
 
 param_names <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
@@ -18,10 +19,15 @@ param_names <- c(
   "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]"
 )
 
-write_csv(fit_session_1$summary(variables=param_names), "../data/exp1_session_01_posterior_summaries.csv")
-write_csv(fit_session_2$summary(variables=param_names), "../data/exp1_session_02_posterior_summaries.csv")
-
+FONT_SIZE_1 <- 22
+FONT_SIZE_2 <- 20
+FONT_SIZE_3 <- 18
 COLOR_PALETTE <- c('#27374D', '#B70404')
+
+custom_labeller <- labeller(
+  parameter = label_parsed,
+  effect = label_value
+)
 
 #------------------------------------------------------------------------------#
 # Session 1
@@ -31,7 +37,6 @@ s1_post_samples <- fit_session_1$draws(
   inc_warmup = FALSE,
   format = "draws_matrix"
 )
-
 s1_post_samples <- as_data_frame(s1_post_samples) %>% 
   mutate(draw = 1:8000) %>% 
   pivot_longer(
@@ -39,7 +44,6 @@ s1_post_samples <- as_data_frame(s1_post_samples) %>%
     names_to = c("parameter", "condition"),
     names_pattern = "(mu_\\w+)\\[(\\d+)\\]"
   )
-
 s1_post_samples <- s1_post_samples %>% 
   mutate(
     factual_truth = case_when(
@@ -53,32 +57,49 @@ s1_post_samples <- s1_post_samples %>%
     value = as.numeric(value)
   )
 
-plot <- s1_post_samples %>% 
+s1_post_samples <- s1_post_samples %>%
+  mutate(parameter = factor(
+    parameter,
+    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
+    labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+    )
+  )
+
+estimates_plot_s1 <- s1_post_samples %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
-  geom_violin(alpha = 0.75) +
-  facet_wrap(~parameter, scales = "free") +
+  geom_violin() +
+  facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
   theme_classic() +
-  scale_color_manual(values = COLOR_PALETTE) +
-  scale_fill_manual(values = COLOR_PALETTE)
+  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
+  labs(
+    x = 'Factual truth',
+    y = 'Value',
+    title = 'Group−level Posterior Distributions: Experiment 1, Session 1'
+  ) +
+  ggthemes::theme_tufte() + 
+  theme(axis.line = element_line(size = .5, color = "#969696"),
+        axis.ticks = element_line(color = "#969696"),
+        axis.text.x = element_text(size = FONT_SIZE_3),
+        axis.text.y = element_text(size = FONT_SIZE_3),
+        strip.text = element_text(size = FONT_SIZE_1),
+        text=element_text(size = FONT_SIZE_2),
+        plot.title = element_text(size = FONT_SIZE_1,
+                                  hjust = 0.5,
+                                  face = 'bold'),
+        panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+        panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+        panel.background = element_blank(),
+        axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.title.x = element_text(margin = margin(t = 10, r = 0, b =05, l = 0))
+  )
 
-ggsave("../plots/session_1_param_estimates.png", plot)
-
-posterior_summaries <- fit_session_1$summary(variables = param_names) %>%
-  as_tibble() %>% 
-  mutate_if(is.numeric, round, digits=2)
-
-posterior_summaries$variable <- c(
-  "mu_v_1", "mu_v_2", "mu_v_3", "mu_v_4", 
-  "mu_a_1", "mu_a_2", "mu_a_3", "mu_a_4", 
-  "mu_ndt_1", "mu_ndt_2", "mu_ndt_3", "mu_ndt_4", 
-  "mu_bias_1", "mu_bias_2", "mu_bias_3", "mu_bias_4"
+ggsave(
+  '../plots/01_param_estimates_s1.pdf',
+  estimates_plot_s1,
+  device = 'pdf', dpi = 300,
+  width = 12, height = 6
 )
-
-write_csv(posterior_summaries, "session_1_posterior_summaries.csv")
-
-apa_table <- nice_table(posterior_summaries, title = "Posterior Summaries Session 1")
-set_flextable_defaults(fonts_ignore=TRUE)
-print(apa_table, preview = "pdf")
 
 ## Contrasts
 contrast_df_s1 <- tibble()
@@ -106,30 +127,17 @@ for (name in unique(s1_post_samples$parameter)){
   contrast_df_s1 <- rbind(contrast_df_s1, tmp_df)
 }
 
-# contrast_df_summary <- contrast_df %>% 
-#   group_by(parameter, effect) %>% 
-#   summarise(
-#     median = median(value),
-#     ci_low = quantile(value, 0.025),
-#     ci_high = quantile(value, 0.975)
-#   )
-# 
-# write_csv(contrast_df_summary, "session_1_contrast_summaries.csv")
-# 
-# apa_table <- nice_table(contrast_df_summary, title = "Contrasts Session 1")
-# set_flextable_defaults(fonts_ignore=TRUE)
-# print(apa_table, preview = "pdf")
+contrast_session_01 <- contrast_df_s1 %>%
+  group_by(parameter, effect) %>%
+  summarise(
+    median = median(value),
+    ci_low = quantile(value, 0.025),
+    ci_high = quantile(value, 0.975)
+  ) %>% 
+  ungroup() %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-contrast_plot <- contrast_df_s1 %>% 
-  ggplot(aes(x = value)) +
-  geom_density(fill = "firebrick") + 
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  facet_grid(parameter ~ effect) +
-  theme_minimal() +
-  scale_x_continuous(limits = c(-0.7, 0.5)) + 
-  ggtitle("Contrasts Session 1")
-
-ggsave("../plots/session_1_contrast_plot.pdf", contrast_plot)
+write_csv(contrast_session_01, "../data/contrast_session_01.csv")
 
 #------------------------------------------------------------------------------#
 # Session 2
@@ -160,33 +168,49 @@ s2_post_samples <- s2_post_samples %>%
     )
   )
 
-# plot <- s2_post_samples %>% 
-#   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
-#   geom_violin(alpha = 0.75) +
-#   facet_wrap(~parameter, scales = "free") +
-#   theme_classic() +
-#   scale_color_manual(values = COLOR_PALETTE) +
-#   scale_fill_manual(values = COLOR_PALETTE)
-# 
-# ggsave("../plots/session_2_param_estimates.png", plot)
+s2_post_samples <- s2_post_samples %>%
+  mutate(parameter = factor(
+    parameter,
+    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
+    labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+  )
+  )
 
-# posterior_summaries <- fit_session_2$summary(variables = param_names) %>%
-#   as_tibble() %>% 
-#   mutate_if(is.numeric, round, digits=2)
-# 
-# posterior_summaries$variable <- c(
-#   "mu_v_1", "mu_v_2", "mu_v_3", "mu_v_4", 
-#   "mu_a_1", "mu_a_2", "mu_a_3", "mu_a_4", 
-#   "mu_ndt_1", "mu_ndt_2", "mu_ndt_3", "mu_ndt_4", 
-#   "mu_bias_1", "mu_bias_2", "mu_bias_3", "mu_bias_4"
-# )
-# 
-# write_csv(posterior_summaries, "session_2_posterior_summaries.csv")
-# 
-# apa_table <- nice_table(posterior_summaries, title = "Posterior Summaries Session 2")
-# set_flextable_defaults(fonts_ignore=TRUE)
-# print(apa_table, preview = "pdf")
+estimates_plot_s2 <- s2_post_samples %>% 
+  ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
+  geom_violin() +
+  facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
+  theme_classic() +
+  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
+  labs(
+    x = 'Factual truth',
+    y = 'Value',
+    title = 'Group−level Posterior Distributions: Experiment 1, Session 2'
+  ) +
+  ggthemes::theme_tufte() + 
+  theme(axis.line = element_line(size = .5, color = "#969696"),
+        axis.ticks = element_line(color = "#969696"),
+        axis.text.x = element_text(size = FONT_SIZE_3),
+        axis.text.y = element_text(size = FONT_SIZE_3),
+        strip.text = element_text(size = FONT_SIZE_1),
+        text=element_text(size = FONT_SIZE_2),
+        plot.title = element_text(size = FONT_SIZE_1,
+                                  hjust = 0.5,
+                                  face = 'bold'),
+        panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+        panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+        panel.background = element_blank(),
+        axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.title.x = element_text(margin = margin(t = 10, r = 0, b =05, l = 0))
+  )
 
+ggsave(
+  '../plots/01_param_estimates_s2.pdf',
+  estimates_plot_s2,
+  device = 'pdf', dpi = 300,
+  width = 12, height = 6
+)
 
 ## Contrasts
 contrast_df_s2 <- tibble()
@@ -214,62 +238,45 @@ for (name in unique(s2_post_samples$parameter)){
   contrast_df_s2 <- rbind(contrast_df_s2, tmp_df)
 }
 
-# contrast_df_summary <- contrast_df %>% 
-#   group_by(parameter, effect) %>% 
-#   summarise(
-#     median = median(value),
-#     ci_low = quantile(value, 0.025),
-#     ci_high = quantile(value, 0.975)
-#   )
-# 
-# write_csv(contrast_df_summary, "session_2_contrast_summaries.csv")
-# 
-# apa_table <- nice_table(contrast_df_summary, title = "Contrasts Session 2")
-# set_flextable_defaults(fonts_ignore=TRUE)
-# print(apa_table, preview = "pdf")
+contrast_session_02 <- contrast_df_s2 %>%
+  group_by(parameter, effect) %>%
+  summarise(
+    median = median(value),
+    ci_low = quantile(value, 0.025),
+    ci_high = quantile(value, 0.975)
+  )%>% 
+  ungroup() %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-contrast_plot <- contrast_df_s2 %>% 
-  ggplot(aes(x = value)) +
-  geom_density(fill = "firebrick") + 
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  facet_grid(parameter ~ effect) +
-  theme_minimal() +
-  scale_x_continuous(limits = c(-0.7, 0.5)) + 
-  ggtitle("Contrasts Session 2")
-
-ggsave("../plots/session_2_contrast_plot.pdf", contrast_plot)
-
+write_csv(contrast_session_02, "../data/contrast_session_02.csv")
 
 contrast_df_s1$session <- 1
 contrast_df_s2$session <- 2
 contrast_df <- rbind(contrast_df_s1, contrast_df_s2)
 
-FONT_SIZE_1 <- 22
-FONT_SIZE_2 <- 20
-FONT_SIZE_3 <- 18
-
-# Update contrast_df to use expressions for parameter labels
 contrast_df <- contrast_df %>%
-  mutate(parameter = factor(parameter,
-                            levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),  # replace with your actual parameters
-                            labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))))
+  mutate(
+    parameter = factor(
+      parameter,
+      levels = c("mu[v]", "mu[a]", "mu[ndt]", "mu[bias]"),
+      labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+    ),
+    session = factor(session)
+  )
 
-custom_labeller <- labeller(
-  parameter = label_parsed,  # Parse only `parameter`
-  effect = label_value       # Keep `effect` as strings
-)
-
-# Create the plot
-contrast_plot <- contrast_df %>% 
-  ggplot(aes(x = value, fill = as.factor(session))) +
+contrast_plot_exp_1 <- contrast_df %>% 
+  ggplot(aes(x = value, fill = session)) +
   geom_density(alpha = 0.75) + 
   geom_vline(xintercept = 0, linetype = "dashed") +
-  facet_grid(parameter ~ effect, labeller = custom_labeller) +  # label_parsed interprets expressions
+  facet_grid(parameter ~ effect, labeller = custom_labeller) +
   scale_x_continuous(limits = c(-0.7, 0.5)) +
   scale_fill_manual(values = COLOR_PALETTE) +
+  labs(
+    x = "Value",
+    y = "Density",
+    title = 'Group-level Parameter Contrasts: Experiment 1'
+  ) +
   ggthemes::theme_tufte() + 
-  ylab("Density") +
-  xlab("Value") +
   theme(axis.line = element_line(size = .5, color = "#969696"),
         axis.ticks = element_line(color = "#969696"),
         axis.text.x = element_text(size = FONT_SIZE_3,
@@ -282,11 +289,175 @@ contrast_plot <- contrast_df %>%
         plot.title = element_text(size = FONT_SIZE_1,
                                   hjust = 0.5,
                                   face = 'bold'),
-        panel.grid = element_line(color = "#969696",
-                                  size = 0.2,
-                                  linetype = 1),
-        legend.spacing.y = unit(0.25, 'cm')) + 
-  ggtitle('Group Level Parameter Contrasts') + 
+        panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+        panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+        panel.background = element_blank(),
+        legend.spacing.y = unit(0.25, 'cm'),
+        panel.spacing = unit(1., "lines")) + 
   guides(fill = guide_legend(title = "Session"))
 
-ggsave("../plots/contrast_plot.pdf", width=15, contrast_plot)
+ggsave(
+  '../plots/02_contrast_plot_exp_1.pdf',
+  contrast_plot_exp_1,
+  device = 'pdf', dpi = 300,
+  width = 12, height = 7
+)
+
+#------------------------------------------------------------------------------#
+# Experiment 2
+#------------------------------------------------------------------------------#
+exp2_post_samples <- fit_exp_2$draws(
+  variables = param_names,
+  inc_warmup = FALSE,
+  format = "draws_matrix"
+)
+exp2_post_samples <- as_data_frame(exp2_post_samples) %>% 
+  mutate(draw = 1:8000) %>% 
+  pivot_longer(
+    cols = starts_with("transf"),
+    names_to = c("parameter", "condition"),
+    names_pattern = "(mu_\\w+)\\[(\\d+)\\]"
+  )
+exp2_post_samples <- exp2_post_samples %>% 
+  mutate(
+    factual_truth = case_when(
+      condition == 1 | condition == 2 ~ "True",
+      condition == 3 | condition == 4 ~ "False"
+    ),
+    stim_type = case_when(
+      condition == 1 | condition == 3 ~ "New statement",
+      condition == 2 | condition == 4 ~ "Repeated statement"
+    ),
+    value = as.numeric(value)
+  )
+
+exp2_post_samples <- exp2_post_samples %>%
+  mutate(parameter = factor(
+    parameter,
+    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
+    labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+  )
+  )
+
+estimates_plot_exp2 <- exp2_post_samples %>% 
+  ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
+  geom_violin() +
+  facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
+  theme_classic() +
+  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
+  labs(
+    x = 'Factual truth',
+    y = 'Value',
+    title = 'Group−level Posterior Distributions: Experiment 2'
+  ) +
+  ggthemes::theme_tufte() + 
+  theme(axis.line = element_line(size = .5, color = "#969696"),
+        axis.ticks = element_line(color = "#969696"),
+        axis.text.x = element_text(size = FONT_SIZE_3),
+        axis.text.y = element_text(size = FONT_SIZE_3),
+        strip.text = element_text(size = FONT_SIZE_1),
+        text=element_text(size = FONT_SIZE_2),
+        plot.title = element_text(size = FONT_SIZE_1,
+                                  hjust = 0.5,
+                                  face = 'bold'),
+        panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+        panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+        panel.background = element_blank(),
+        axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0)),
+        axis.title.x = element_text(margin = margin(t = 10, r = 0, b =05, l = 0))
+  )
+
+ggsave(
+  '../plots/01_param_estimates_exp2.pdf',
+  estimates_plot_exp2,
+  device = 'pdf', dpi = 300,
+  width = 12, height = 6
+)
+
+## Contrasts
+contrast_df_exp2 <- tibble()
+for (name in unique(exp2_post_samples$parameter)){
+  # main effect repetition
+  effect_repetition <- ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 2] +
+                           exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 4]) / 2) -
+    ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 1] +
+        exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 3]) / 2)
+  # main effect factual truth
+  effect_truth <- ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 1] +
+                      exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 2]) / 2) -
+    ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 2] +
+        exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 4]) / 2)
+  # interaction
+  effect_interaction <- ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 1] +
+                            exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 4]) / 2) -
+    ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 2] +
+        exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 3]) / 2)
+  tmp_df <- tibble(
+    "parameter" = rep(name, 8000*3),
+    "effect" = rep(c("Repetition status", "Factual truth", "Interaction"), each = 8000),
+    "value" = c(effect_repetition, effect_truth, effect_interaction)
+  )
+  contrast_df_exp2 <- rbind(contrast_df_exp2, tmp_df)
+}
+
+contrast_exp2 <- contrast_df_exp2 %>%
+  group_by(parameter, effect) %>%
+  summarise(
+    median = median(value),
+    ci_low = quantile(value, 0.025),
+    ci_high = quantile(value, 0.975)
+  )%>% 
+  ungroup() %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
+
+write_csv(contrast_exp2, "../data/contrast_exp2.csv")
+
+contrast_df_exp2 <- contrast_df_exp2 %>%
+  mutate(
+    parameter = factor(
+      parameter,
+      levels = c("mu[v]", "mu[a]", "mu[ndt]", "mu[bias]"),
+      labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+    )
+  )
+
+contrast_plot_exp_2 <- contrast_df_exp2 %>% 
+  ggplot(aes(x = value)) +
+  geom_density(alpha = 0.75, fill = COLOR_PALETTE[1]) + 
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  facet_grid(parameter ~ effect, labeller = custom_labeller) +
+  scale_x_continuous(limits = c(-0.7, 0.5)) + 
+  labs(
+    x = "Value",
+    y = "Density",
+    title = 'Group-level Parameter Contrasts: Experiment 2'
+  ) +
+  ggthemes::theme_tufte() + 
+  theme(
+    axis.line = element_line(size = .5, color = "#969696"),
+    axis.ticks = element_line(color = "#969696"),
+    axis.text.x = element_text(size = FONT_SIZE_3,
+                               angle = 45,
+                               vjust = 0.5),
+    axis.text.y = element_text(size = FONT_SIZE_3),
+    strip.text.x = element_text(size = FONT_SIZE_2),
+    strip.text.y = element_text(size = FONT_SIZE_2, angle = 0),
+    text = element_text(size = FONT_SIZE_2),
+    plot.title = element_text(size = FONT_SIZE_1,
+                              hjust = 0.5,
+                              face = 'bold'),
+    panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+    panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+    panel.background = element_blank(),
+    legend.spacing.y = unit(0.25, 'cm'),
+    panel.spacing = unit(1., "lines")
+  )
+
+ggsave(
+  '../plots/02_contrast_plot_exp_2.pdf',
+  contrast_plot_exp_2,
+  device = 'pdf', dpi = 300,
+  width = 12, height = 7
+)
+
