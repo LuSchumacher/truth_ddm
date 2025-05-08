@@ -27,7 +27,15 @@ df %<>%
     log(rt) < boxplot(log(rt))$stats[5]
   ) %>% 
   ungroup() %>% 
-  mutate(id = dense_rank(id))
+  mutate(
+    id = dense_rank(id),
+    condition = case_when(
+      factual_truth == 1 & stim_type == 0 ~ 1, # true statement, new
+      factual_truth == 1 & stim_type == 1 ~ 2, # true statement, repeated
+      factual_truth == 0 & stim_type == 0 ~ 3, # false statement, new
+      factual_truth == 0 & stim_type == 1 ~ 4  # false statement, repeated
+    )
+  )
 
 summary <- df %>% 
   group_by(id, session) %>% 
@@ -83,6 +91,15 @@ df %<>%
     rt_question = ifelse(rt_question < 1, NA, rt_question)
   ) %>% 
   ungroup() %>% 
-  drop_na(rt, rt_question)
+  drop_na(rt, rt_question) %>% 
+  ungroup() %>% 
+  mutate(
+    condition = case_when(
+      factual_truth == 1 & stim_type == 0 ~ 1, # true statement, new
+      factual_truth == 1 & stim_type == 1 ~ 2, # true statement, repeated
+      factual_truth == 0 & stim_type == 0 ~ 3, # false statement, new
+      factual_truth == 0 & stim_type == 1 ~ 4  # false statement, repeated
+    )
+  )
 
 write_csv(df, 'data_exp_2.csv')
