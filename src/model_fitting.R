@@ -43,15 +43,6 @@ m_full <- cmdstan_model(
 # SESSION 1
 ################################################################################
 df_session_1 <- read.csv('../data/data_session_1.csv')
-df_session_1 %<>%
-  mutate(
-    condition = case_when(
-      factual_truth == 1 & stim_type == 0 ~ 1, # true statement, new
-      factual_truth == 1 & stim_type == 1 ~ 2, # true statement, repeated
-      factual_truth == 0 & stim_type == 0 ~ 3, # false statement, new
-      factual_truth == 0 & stim_type == 1 ~ 4  # false statement, repeated
-    )
-  )
 
 N <- length(unique(df_session_1$id))
 stan_data = list(
@@ -86,15 +77,6 @@ fit_session_1$save_object("../fits/fit_session_1")
 # SESSION 2
 ################################################################################
 df_session_2 <- read.csv('../data/data_session_2.csv')
-df_session_2 %<>%
-  mutate(
-    condition = case_when(
-      factual_truth == 1 & stim_type == 0 ~ 1, # true statement, new
-      factual_truth == 1 & stim_type == 1 ~ 2, # true statement, repeated
-      factual_truth == 0 & stim_type == 0 ~ 3, # false statement, new
-      factual_truth == 0 & stim_type == 1 ~ 4  # false statement, repeated
-    )
-  )
 
 N <- length(unique(df_session_2$id))
 stan_data = list(
@@ -129,15 +111,6 @@ fit_session_2$save_object("../fits/fit_session_2")
 # EXPERIMENT 2
 ################################################################################
 df_exp_2 <- read.csv('../data/data_exp_2.csv')
-df_exp_2 %<>%
-  mutate(
-    condition = case_when(
-      factual_truth == 1 & stim_type == 0 ~ 1, # true statement, new
-      factual_truth == 1 & stim_type == 1 ~ 2, # true statement, repeated
-      factual_truth == 0 & stim_type == 0 ~ 3, # false statement, new
-      factual_truth == 0 & stim_type == 1 ~ 4  # false statement, repeated
-    )
-  )
 
 N <- length(unique(df_exp_2$id))
 stan_data = list(

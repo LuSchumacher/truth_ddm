@@ -643,7 +643,7 @@ resp_prob_plot_exp2 <- summary_df_exp2 %>%
         axis.text.y = element_text(size = FONT_SIZE_3),
         strip.text.x = element_text(size = FONT_SIZE_3),
         strip.text.y = element_text(size = FONT_SIZE_3, angle = 0),
-        text=element_text(size = FONT_SIZE_2),
+        text = element_text(size = FONT_SIZE_2),
         plot.title = element_text(size = FONT_SIZE_1,
                                   hjust = 0.5,
                                   face = 'bold'),
