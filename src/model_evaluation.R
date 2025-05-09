@@ -116,12 +116,6 @@ ggsave(
   width = 12, height = 6
 )
 
-mean((s1_post_samples$value[s1_post_samples$parameter == 'mu[v]' & s1_post_samples$condition == 1] +
-  s1_post_samples$value[s1_post_samples$parameter == 'mu[v]' & s1_post_samples$condition == 2]) / 2)
-
-mean(c(0.27, 0.02))
-mean(c(0.32, 0.02))
-
 ## Contrasts
 contrast_df_s1 <- tibble()
 for (name in unique(s1_post_samples$parameter)){

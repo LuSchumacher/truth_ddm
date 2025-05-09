@@ -378,3 +378,34 @@ post_summaries <- fixed_effects %>%
 
 write_csv(post_summaries, "../data/post_summaries_hlm_exp2.csv")
 
+
+# Model on reading time
+formula <- rt_question ~ stim_type * factual_truth + (1 + stim_type * factual_truth | id)
+
+priors <- prior(normal(0, 1.0), class = b)
+model_reading_time_exp2 <- brm(
+  formula = formula,
+  family = lognormal(),
+  data = df_exp2,
+  prior = priors,
+  iter = 10000,
+  cores = 4,
+  chains = 4,
+  file = "../fits/hlm_fit_reading_time_exp2",
+  sample_prior = "yes"
+)
+
+model_reading_time_exp2
+
+hyp_rep <- "stim_type1 = 0"
+test_rep <- hypothesis(model_reading_time_exp2, hyp_rep)$hypothesis
+bf_rep <- round(1 / test_rep["Evid.Ratio"], 2)
+
+hyp_factual_truth <- "factual_truth1 = 0"
+test_factual_truth <- hypothesis(model_reading_time_exp2, hyp_factual_truth)$hypothesis
+bf_factual_truth <- round(1 / test_factual_truth["Evid.Ratio"], 2)
+
+hyp_type_truth <- "stim_type1:factual_truth1 = 0"
+test_type_truth <- hypothesis(model_reading_time_exp2, hyp_type_truth)$hypothesis
+bf_type_truth <- round(1 / test_type_truth["Evid.Ratio"], 2)
+

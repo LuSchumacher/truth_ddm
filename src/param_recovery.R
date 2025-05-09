@@ -36,6 +36,10 @@ PARAM_NAMES <- c(
   "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]"
 )
 
+FONT_SIZE_1 <- 22
+FONT_SIZE_2 <- 20
+FONT_SIZE_3 <- 18
+
 #------------------------------------------------------------------------------#
 # Parameter sampling
 #------------------------------------------------------------------------------#
@@ -242,16 +246,93 @@ for (i in 1:NUM_SIM) {
 }
 
 
+#------------------------------------------------------------------------------#
+# Evaluation
+#------------------------------------------------------------------------------#
+true_params <- read_csv("../data/param_recovery/group_param_samples_recovery.csv")
+true_params <- true_params %>% 
+  select(
+    sim_id, condition, mu_v, 
+    tranf_a, tranf_ndt, tranf_bias
+  ) %>% 
+  pivot_longer(
+    cols = -c(sim_id, condition),
+    names_to = "parameter",
+    values_to = "value_true"
+  ) %>% 
+  mutate(parameter = case_when(
+    parameter == "mu_v" ~ "v",
+    parameter == "tranf_a" ~ "a",
+    parameter == "tranf_ndt" ~ "ndt",
+    parameter == "tranf_bias" ~ "bias",
+  )) %>% 
+  arrange(sim_id, parameter, condition)
 
+true_params$type <- "true"
 
+path <- "../data/param_recovery/"
+files <- list.files(path, pattern = "group_param_estimates_recovery")
 
+pred_params <- read_csv(paste0(path, files)) %>% 
+  arrange(sim_id, parameter, condition)
+  
+true_params$value_pred <- pred_params$median
+true_params <- true_params %>% 
+  mutate(
+    parameter = factor(parameter, levels = c("v", "a", "ndt", "bias"))
+  )
 
+r2_scores <- true_params %>%
+  group_by(parameter) %>%
+  summarise(
+    r2 = cor(value_true, value_pred)^2
+  )
+true_params_with_r2 <- true_params %>%
+  left_join(r2_scores, by = "parameter")
+plots <- true_params_with_r2 %>%
+  group_split(parameter) %>%
+  imap(~{
+    df <- .x
+    lims <- range(c(df$value_true, df$value_pred))
+    r2_label <- sprintf("R² = %.2f", unique(df$r2))
+    
+    p <- ggplot(df, aes(x = value_true, y = value_pred)) +
+      geom_point(alpha = 0.6) +
+      geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
+      annotate("text", x = lims[1], y = lims[2], hjust = 0, vjust = 1,
+               label = r2_label, size = 6, fontface = "italic", color = "black") +
+      coord_fixed() +
+      xlim(lims) + ylim(lims) +
+      ggtitle(unique(df$parameter)) +
+      labs(
+        x = "True",
+        y = if (.y == 1) "Estimated" else NULL
+      ) +
+      ggthemes::theme_tufte() + 
+      theme(
+        axis.line = element_line(size = .5, color = "#969696"),
+        axis.ticks = element_line(color = "#969696"),
+        axis.text.x = element_text(size = FONT_SIZE_3),
+        axis.text.y = element_text(size = FONT_SIZE_3),
+        strip.text.x = element_text(size = FONT_SIZE_2),
+        strip.text.y = element_text(size = FONT_SIZE_2, angle = 0),
+        text = element_text(size = FONT_SIZE_2),
+        plot.title = element_text(size = FONT_SIZE_1,
+                                  hjust = 0.5,
+                                  face = 'bold'),
+        panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+        panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+        panel.background = element_blank(),
+        legend.spacing.y = unit(0.25, 'cm'),
+        panel.spacing = unit(1., "lines"),
+        axis.title.y = if (.y == 1) element_text() else element_blank()
+      )
+    
+    p
+  })
 
-
-
-
-
-
-
-
-
+combined_plot <- wrap_plots(plots, ncol = 4)
+ggsave("../plots/parameter_recovery_plot.jpeg", 
+       plot = combined_plot, 
+       width = 12, height = 8, dpi = 300, 
+       device = "jpeg")
