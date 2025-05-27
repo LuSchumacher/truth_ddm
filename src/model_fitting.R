@@ -35,7 +35,7 @@ PARAM_NAMES <- c(
 )
 
 m_full <- cmdstan_model(
-  '../model/full_model.stan',
+  '../model/full_model_ndt_var.stan',
   cpp_options = list(stan_threads = T)
 )
 
