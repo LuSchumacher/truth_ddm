@@ -196,7 +196,7 @@ bf_plot <- fixed_effects %>%
 bf_plot
 
 ggsave(
-  "../plots/bf_plot_exp1.pdf",
+  "../plots/bf_plot_exp1.jpeg",
   dpi=300, width = 10, height = 8
 )
 
@@ -359,7 +359,7 @@ bf_plot <- fixed_effects %>%
 bf_plot
 
 ggsave(
-  "../plots/bf_plot_exp2.pdf",
+  "../plots/bf_plot_exp2.jpeg",
   bf_plot,
   dpi=300, width = 10, height = 4
 )

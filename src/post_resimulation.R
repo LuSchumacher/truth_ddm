@@ -21,77 +21,78 @@ idx <- sample(1:8000, NUM_RESIMS, replace = FALSE)
 #------------------------------------------------------------------------------#
 # Re-simulation: Session 1
 #------------------------------------------------------------------------------#
-fit_session_1 <- readRDS("../fits/fit_session_1")
-df_posterior_s1 <- as_tibble(
-  fit_session_1$draws(
-    inc_warmup = FALSE,
-    format = "draws_matrix"
-  )
-) %>% 
-  mutate(draw = row_number()) %>% 
-  select(
-    draw,
-    matches("^v\\[[1-4],\\s?\\d+\\]$"),
-    matches("^a\\[[1-4],\\s?\\d+\\]$"),
-    matches("^ndt\\[[1-4],\\s?\\d+\\]$"),
-    matches("^bias\\[[1-4],\\s?\\d+\\]$")
-  ) %>% 
-  pivot_longer(
-    cols = -draw,
-    names_to = "param_full",
-    values_to = "value"
-  ) %>% 
-  mutate(
-    parameter = str_extract(param_full, "^[a-z]+"),  # Capture parameter name (v, a, etc.)
-    condition = as.integer(str_extract(param_full, "(?<=\\[)\\d+")),  # Extract condition (1-4)
-    participant = as.integer(str_extract(param_full, "(?<=,\\s?)\\d+")),  # Extract participant number
-    value = as.numeric(value)
-  ) %>%
-  select(draw, parameter, condition, participant, value)
-
-
-pred_data_s1 <- tibble()
-for (i in 1:length(idx)) {
-  tmp_post <- df_posterior_s1 %>% 
-    filter(draw == idx[i])
-  tmp_pred_data <- tibble()
-  for (j in 1:nrow(df_s1)) {
-    v <- tmp_post$value[
-      tmp_post$parameter == "v" &
-        tmp_post$participant == df_s1$id[j] &
-        tmp_post$condition == df_s1$condition[j]
-    ]
-    a <- tmp_post$value[
-      tmp_post$parameter == "a" &
-        tmp_post$participant == df_s1$id[j] &
-        tmp_post$condition == df_s1$condition[j]
-    ]
-    ndt <- tmp_post$value[
-      tmp_post$parameter == "ndt" &
-        tmp_post$participant == df_s1$id[j] &
-        tmp_post$condition == df_s1$condition[j]
-    ]
-    bias <- tmp_post$value[
-      tmp_post$parameter == "bias" &
-        tmp_post$participant == df_s1$id[j] &
-        tmp_post$condition == df_s1$condition[j]
-    ]
-    x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
-    names(x) <- c("resp", "rt")
-    tmp_pred_data <- tmp_pred_data %>% 
-      bind_rows(x)
-  }
-  tmp_pred_data$id <- df_s1$id
-  tmp_pred_data$condition <- df_s1$condition
-  tmp_pred_data$resim_id <- i
-  tmp_pred_data$stim_type <- df_s1$stim_type
-  tmp_pred_data$factual_truth <- df_s1$factual_truth
-  pred_data_s1 <- pred_data_s1 %>% 
-    bind_rows(tmp_pred_data)
-  print(paste("Resimulation Nr.", i, "finished"))
-}
-
-write_csv(pred_data_s1, "../data/pred_data_s1.csv")
+# fit_session_1 <- readRDS("../fits/fit_session_1")
+# df_posterior_s1 <- as_tibble(
+#   fit_session_1$draws(
+#     inc_warmup = FALSE,
+#     format = "draws_matrix"
+#   )
+# ) %>% 
+#   mutate(draw = row_number()) %>% 
+#   select(
+#     draw,
+#     matches("^v\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^a\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^ndt\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^bias\\[[1-4],\\s?\\d+\\]$")
+#   ) %>% 
+#   pivot_longer(
+#     cols = -draw,
+#     names_to = "param_full",
+#     values_to = "value"
+#   ) %>% 
+#   mutate(
+#     parameter = str_extract(param_full, "^[a-z]+"),  # Capture parameter name (v, a, etc.)
+#     condition = as.integer(str_extract(param_full, "(?<=\\[)\\d+")),  # Extract condition (1-4)
+#     participant = as.integer(str_extract(param_full, "(?<=,\\s?)\\d+")),  # Extract participant number
+#     value = as.numeric(value)
+#   ) %>%
+#   select(draw, parameter, condition, participant, value)
+# 
+# 
+# pred_data_s1 <- tibble()
+# for (i in 1:length(idx)) {
+#   tmp_post <- df_posterior_s1 %>% 
+#     filter(draw == idx[i])
+#   tmp_pred_data <- tibble()
+#   for (j in 1:nrow(df_s1)) {
+#     v <- tmp_post$value[
+#       tmp_post$parameter == "v" &
+#         tmp_post$participant == df_s1$id[j] &
+#         tmp_post$condition == df_s1$condition[j]
+#     ]
+#     a <- tmp_post$value[
+#       tmp_post$parameter == "a" &
+#         tmp_post$participant == df_s1$id[j] &
+#         tmp_post$condition == df_s1$condition[j]
+#     ]
+#     ndt <- tmp_post$value[
+#       tmp_post$parameter == "ndt" &
+#         tmp_post$participant == df_s1$id[j] &
+#         tmp_post$condition == df_s1$condition[j]
+#     ]
+#     bias <- tmp_post$value[
+#       tmp_post$parameter == "bias" &
+#         tmp_post$participant == df_s1$id[j] &
+#         tmp_post$condition == df_s1$condition[j]
+#     ]
+#     x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
+#     names(x) <- c("resp", "rt")
+#     tmp_pred_data <- tmp_pred_data %>% 
+#       bind_rows(x)
+#   }
+#   tmp_pred_data$id <- df_s1$id
+#   tmp_pred_data$condition <- df_s1$condition
+#   tmp_pred_data$resim_id <- i
+#   tmp_pred_data$stim_type <- df_s1$stim_type
+#   tmp_pred_data$factual_truth <- df_s1$factual_truth
+#   pred_data_s1 <- pred_data_s1 %>% 
+#     bind_rows(tmp_pred_data)
+#   print(paste("Resimulation Nr.", i, "finished"))
+# }
+# 
+# write_csv(pred_data_s1, "../data/pred_data_s1.csv")
+pred_data_s1 <- read_csv("../data/pred_data_s1.csv")
 
 emp_rt_summaries_s1 <- df_s1 %>%
   group_by(stim_type) %>%
@@ -127,76 +128,78 @@ pred_rt_summaries_s1 <- pred_data_s1 %>%
 #------------------------------------------------------------------------------#
 # Re-simulation: Session 2
 #------------------------------------------------------------------------------#
-fit_session_2 <- readRDS("../fits/fit_session_2")
-df_posterior_s2 <- as_tibble(
-  fit_session_2$draws(
-    inc_warmup = FALSE,
-    format = "draws_matrix"
-  )
-) %>% 
-  mutate(draw = row_number()) %>% 
-  select(
-    draw,
-    matches("^v\\[[1-4],\\s?\\d+\\]$"),
-    matches("^a\\[[1-4],\\s?\\d+\\]$"),
-    matches("^ndt\\[[1-4],\\s?\\d+\\]$"),
-    matches("^bias\\[[1-4],\\s?\\d+\\]$")
-  ) %>% 
-  pivot_longer(
-    cols = -draw,
-    names_to = "param_full",
-    values_to = "value"
-  ) %>% 
-  mutate(
-    parameter = str_extract(param_full, "^[a-z]+"),  # Capture parameter name (v, a, etc.)
-    condition = as.integer(str_extract(param_full, "(?<=\\[)\\d+")),  # Extract condition (1-4)
-    participant = as.integer(str_extract(param_full, "(?<=,\\s?)\\d+")),  # Extract participant number
-    value = as.numeric(value)
-  ) %>%
-  select(draw, parameter, condition, participant, value)
+# fit_session_2 <- readRDS("../fits/fit_session_2")
+# df_posterior_s2 <- as_tibble(
+#   fit_session_2$draws(
+#     inc_warmup = FALSE,
+#     format = "draws_matrix"
+#   )
+# ) %>% 
+#   mutate(draw = row_number()) %>% 
+#   select(
+#     draw,
+#     matches("^v\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^a\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^ndt\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^bias\\[[1-4],\\s?\\d+\\]$")
+#   ) %>% 
+#   pivot_longer(
+#     cols = -draw,
+#     names_to = "param_full",
+#     values_to = "value"
+#   ) %>% 
+#   mutate(
+#     parameter = str_extract(param_full, "^[a-z]+"),  # Capture parameter name (v, a, etc.)
+#     condition = as.integer(str_extract(param_full, "(?<=\\[)\\d+")),  # Extract condition (1-4)
+#     participant = as.integer(str_extract(param_full, "(?<=,\\s?)\\d+")),  # Extract participant number
+#     value = as.numeric(value)
+#   ) %>%
+#   select(draw, parameter, condition, participant, value)
+# 
+# pred_data_s2 <- tibble()
+# for (i in 1:length(idx)) {
+#   tmp_post <- df_posterior_s2 %>% 
+#     filter(draw == idx[i])
+#   tmp_pred_data <- tibble()
+#   for (j in 1:nrow(df_s2)) {
+#     v <- tmp_post$value[
+#       tmp_post$parameter == "v" &
+#         tmp_post$participant == df_s2$id[j] &
+#         tmp_post$condition == df_s2$condition[j]
+#     ]
+#     a <- tmp_post$value[
+#       tmp_post$parameter == "a" &
+#         tmp_post$participant == df_s2$id[j] &
+#         tmp_post$condition == df_s2$condition[j]
+#     ]
+#     ndt <- tmp_post$value[
+#       tmp_post$parameter == "ndt" &
+#         tmp_post$participant == df_s2$id[j] &
+#         tmp_post$condition == df_s2$condition[j]
+#     ]
+#     bias <- tmp_post$value[
+#       tmp_post$parameter == "bias" &
+#         tmp_post$participant == df_s2$id[j] &
+#         tmp_post$condition == df_s2$condition[j]
+#     ]
+#     x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
+#     names(x) <- c("resp", "rt")
+#     tmp_pred_data <- tmp_pred_data %>% 
+#       bind_rows(x)
+#   }
+#   tmp_pred_data$id <- df_s2$id
+#   tmp_pred_data$condition <- df_s2$condition
+#   tmp_pred_data$resim_id <- i
+#   tmp_pred_data$stim_type <- df_s2$stim_type
+#   tmp_pred_data$factual_truth <- df_s2$factual_truth
+#   pred_data_s2 <- pred_data_s2 %>% 
+#     bind_rows(tmp_pred_data)
+#   print(paste("Resimulation Nr.", i, "finished"))
+# }
 
-pred_data_s2 <- tibble()
-for (i in 1:length(idx)) {
-  tmp_post <- df_posterior_s2 %>% 
-    filter(draw == idx[i])
-  tmp_pred_data <- tibble()
-  for (j in 1:nrow(df_s2)) {
-    v <- tmp_post$value[
-      tmp_post$parameter == "v" &
-        tmp_post$participant == df_s2$id[j] &
-        tmp_post$condition == df_s2$condition[j]
-    ]
-    a <- tmp_post$value[
-      tmp_post$parameter == "a" &
-        tmp_post$participant == df_s2$id[j] &
-        tmp_post$condition == df_s2$condition[j]
-    ]
-    ndt <- tmp_post$value[
-      tmp_post$parameter == "ndt" &
-        tmp_post$participant == df_s2$id[j] &
-        tmp_post$condition == df_s2$condition[j]
-    ]
-    bias <- tmp_post$value[
-      tmp_post$parameter == "bias" &
-        tmp_post$participant == df_s2$id[j] &
-        tmp_post$condition == df_s2$condition[j]
-    ]
-    x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
-    names(x) <- c("resp", "rt")
-    tmp_pred_data <- tmp_pred_data %>% 
-      bind_rows(x)
-  }
-  tmp_pred_data$id <- df_s2$id
-  tmp_pred_data$condition <- df_s2$condition
-  tmp_pred_data$resim_id <- i
-  tmp_pred_data$stim_type <- df_s2$stim_type
-  tmp_pred_data$factual_truth <- df_s2$factual_truth
-  pred_data_s2 <- pred_data_s2 %>% 
-    bind_rows(tmp_pred_data)
-  print(paste("Resimulation Nr.", i, "finished"))
-}
+# write_csv(pred_data_s2, "../data/pred_data_s2.csv")
 
-write_csv(pred_data_s2, "../data/pred_data_s2.csv")
+pred_data_s2 <- read_csv("../data/pred_data_s2.csv")
 
 emp_rt_summaries_s2 <- df_s2 %>%
   group_by(stim_type) %>%
@@ -232,77 +235,79 @@ pred_rt_summaries_s2 <- pred_data_s2 %>%
 #------------------------------------------------------------------------------#
 # Re-simulation: Experiment 2
 #------------------------------------------------------------------------------#
-fit_exp_2 <- readRDS("../fits/fit_exp_2")
-df_posterior_exp2 <- as_tibble(
-  fit_exp_2$draws(
-    inc_warmup = FALSE,
-    format = "draws_matrix"
-  )
-) %>% 
-  mutate(draw = row_number()) %>% 
-  select(
-    draw,
-    matches("^v\\[[1-4],\\s?\\d+\\]$"),
-    matches("^a\\[[1-4],\\s?\\d+\\]$"),
-    matches("^ndt\\[[1-4],\\s?\\d+\\]$"),
-    matches("^bias\\[[1-4],\\s?\\d+\\]$")
-  ) %>% 
-  pivot_longer(
-    cols = -draw,
-    names_to = "param_full",
-    values_to = "value"
-  ) %>% 
-  mutate(
-    parameter = str_extract(param_full, "^[a-z]+"),  # Capture parameter name (v, a, etc.)
-    condition = as.integer(str_extract(param_full, "(?<=\\[)\\d+")),  # Extract condition (1-4)
-    participant = as.integer(str_extract(param_full, "(?<=,\\s?)\\d+")),  # Extract participant number
-    value = as.numeric(value)
-  ) %>%
-  select(draw, parameter, condition, participant, value)
+# fit_exp_2 <- readRDS("../fits/fit_exp_2")
+# df_posterior_exp2 <- as_tibble(
+#   fit_exp_2$draws(
+#     inc_warmup = FALSE,
+#     format = "draws_matrix"
+#   )
+# ) %>% 
+#   mutate(draw = row_number()) %>% 
+#   select(
+#     draw,
+#     matches("^v\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^a\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^ndt\\[[1-4],\\s?\\d+\\]$"),
+#     matches("^bias\\[[1-4],\\s?\\d+\\]$")
+#   ) %>% 
+#   pivot_longer(
+#     cols = -draw,
+#     names_to = "param_full",
+#     values_to = "value"
+#   ) %>% 
+#   mutate(
+#     parameter = str_extract(param_full, "^[a-z]+"),  # Capture parameter name (v, a, etc.)
+#     condition = as.integer(str_extract(param_full, "(?<=\\[)\\d+")),  # Extract condition (1-4)
+#     participant = as.integer(str_extract(param_full, "(?<=,\\s?)\\d+")),  # Extract participant number
+#     value = as.numeric(value)
+#   ) %>%
+#   select(draw, parameter, condition, participant, value)
+# 
+# pred_data_exp2 <- tibble()
+# for (i in 1:length(idx)) {
+#   tmp_post <- df_posterior_exp2 %>% 
+#     filter(draw == idx[i])
+#   tmp_pred_data <- tibble()
+#   for (j in 1:nrow(df_exp2)) {
+#     v <- tmp_post$value[
+#       tmp_post$parameter == "v" &
+#         tmp_post$participant == df_exp2$id[j] &
+#         tmp_post$condition == df_exp2$condition[j]
+#     ]
+#     a <- tmp_post$value[
+#       tmp_post$parameter == "a" &
+#         tmp_post$participant == df_exp2$id[j] &
+#         tmp_post$condition == df_exp2$condition[j]
+#     ]
+#     ndt <- tmp_post$value[
+#       tmp_post$parameter == "ndt" &
+#         tmp_post$participant == df_exp2$id[j] &
+#         tmp_post$condition == df_exp2$condition[j]
+#     ]
+#     bias <- tmp_post$value[
+#       tmp_post$parameter == "bias" &
+#         tmp_post$participant == df_exp2$id[j] &
+#         tmp_post$condition == df_exp2$condition[j]
+#     ]
+#     x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
+#     names(x) <- c("resp", "rt")
+#     tmp_pred_data <- tmp_pred_data %>% 
+#       bind_rows(x)
+#   }
+#   tmp_pred_data$id <- df_exp2$id
+#   tmp_pred_data$condition <- df_exp2$condition
+#   tmp_pred_data$resim_id <- i
+#   tmp_pred_data$stim_type <- df_exp2$stim_type
+#   tmp_pred_data$factual_truth <- df_exp2$factual_truth
+#   pred_data_exp2 <- pred_data_exp2 %>% 
+#     bind_rows(tmp_pred_data)
+#   print(paste("Resimulation Nr.", i, "finished"))
+# }
+#   
+# write_csv(pred_data_exp2, "../data/pred_data_exp2.csv")
 
-pred_data_exp2 <- tibble()
-for (i in 1:length(idx)) {
-  tmp_post <- df_posterior_exp2 %>% 
-    filter(draw == idx[i])
-  tmp_pred_data <- tibble()
-  for (j in 1:nrow(df_exp2)) {
-    v <- tmp_post$value[
-      tmp_post$parameter == "v" &
-        tmp_post$participant == df_exp2$id[j] &
-        tmp_post$condition == df_exp2$condition[j]
-    ]
-    a <- tmp_post$value[
-      tmp_post$parameter == "a" &
-        tmp_post$participant == df_exp2$id[j] &
-        tmp_post$condition == df_exp2$condition[j]
-    ]
-    ndt <- tmp_post$value[
-      tmp_post$parameter == "ndt" &
-        tmp_post$participant == df_exp2$id[j] &
-        tmp_post$condition == df_exp2$condition[j]
-    ]
-    bias <- tmp_post$value[
-      tmp_post$parameter == "bias" &
-        tmp_post$participant == df_exp2$id[j] &
-        tmp_post$condition == df_exp2$condition[j]
-    ]
-    x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
-    names(x) <- c("resp", "rt")
-    tmp_pred_data <- tmp_pred_data %>% 
-      bind_rows(x)
-  }
-  tmp_pred_data$id <- df_exp2$id
-  tmp_pred_data$condition <- df_exp2$condition
-  tmp_pred_data$resim_id <- i
-  tmp_pred_data$stim_type <- df_exp2$stim_type
-  tmp_pred_data$factual_truth <- df_exp2$factual_truth
-  pred_data_exp2 <- pred_data_exp2 %>% 
-    bind_rows(tmp_pred_data)
-  print(paste("Resimulation Nr.", i, "finished"))
-}
-  
-write_csv(pred_data_exp2, "../data/pred_data_exp2")
-  
+pred_data_exp2 <- read_csv("../data/pred_data_exp2.csv")
+
 emp_rt_summaries_exp2 <- df_exp2 %>%
   group_by(stim_type) %>%
   reframe(
@@ -394,8 +399,8 @@ pred_rt_summaries %>%
   )
 
 ggsave(
-  '../plots/03_rt_quantiles_plot_exp1.pdf',
-  device = 'pdf', dpi = 300,
+  '../plots/03_rt_quantiles_plot_exp1.jpeg',
+  device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
 
@@ -450,8 +455,8 @@ pred_rt_summaries_exp2 %>%
   )
 
 ggsave(
-  '../plots/03_rt_quantiles_plot_exp2.pdf',
-  device = 'pdf', dpi = 300,
+  '../plots/03_rt_quantiles_plot_exp2.jpeg',
+  device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
 
@@ -559,9 +564,9 @@ resp_prob_plot <- summary_df %>%
          color = guide_legend(title=""))
 
 ggsave(
-  '../plots/04_resp_prob_plot_exp1.pdf',
+  '../plots/04_resp_prob_plot_exp1.jpeg',
   resp_prob_plot,
-  device = 'pdf', dpi = 300,
+  device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
 
@@ -656,8 +661,8 @@ resp_prob_plot_exp2 <- summary_df_exp2 %>%
          color = guide_legend(title=""))
 
 ggsave(
-  '../plots/04_resp_prob_plot_exp2.pdf',
+  '../plots/04_resp_prob_plot_exp2.jpeg',
   resp_prob_plot_exp2,
-  device = 'pdf', dpi = 300,
+  device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )

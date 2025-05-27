@@ -29,8 +29,6 @@ custom_labeller <- labeller(
   effect = label_value
 )
 
-fit_session_2$summary(variables = param_names)
-
 #------------------------------------------------------------------------------#
 # Session 1
 #------------------------------------------------------------------------------#
@@ -110,9 +108,9 @@ estimates_plot_s1 <- s1_post_samples %>%
   )
 
 ggsave(
-  '../plots/01_param_estimates_s1.pdf',
+  '../plots/01_param_estimates_s1.jpeg',
   estimates_plot_s1,
-  device = 'pdf', dpi = 300,
+  device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
 
@@ -234,9 +232,9 @@ estimates_plot_s2 <- s2_post_samples %>%
   )
 
 ggsave(
-  '../plots/01_param_estimates_s2.pdf',
+  '../plots/01_param_estimates_s2.jpeg',
   estimates_plot_s2,
-  device = 'pdf', dpi = 300,
+  device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
 
@@ -325,9 +323,9 @@ contrast_plot_exp_1 <- contrast_df %>%
   guides(fill = guide_legend(title = "Session"))
 
 ggsave(
-  '../plots/02_contrast_plot_exp_1.pdf',
+  '../plots/02_contrast_plot_exp_1.jpeg',
   contrast_plot_exp_1,
-  device = 'pdf', dpi = 300,
+  device = 'jpeg', dpi = 300,
   width = 12, height = 7
 )
 
@@ -410,9 +408,9 @@ estimates_plot_exp2 <- exp2_post_samples %>%
   )
 
 ggsave(
-  '../plots/01_param_estimates_exp2.pdf',
+  '../plots/01_param_estimates_exp2.jpeg',
   estimates_plot_exp2,
-  device = 'pdf', dpi = 300,
+  device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
 
@@ -496,9 +494,8 @@ contrast_plot_exp_2 <- contrast_df_exp2 %>%
   )
 
 ggsave(
-  '../plots/02_contrast_plot_exp_2.pdf',
+  '../plots/02_contrast_plot_exp_2.jpeg',
   contrast_plot_exp_2,
-  device = 'pdf', dpi = 300,
+  device = 'jpeg', dpi = 300,
   width = 12, height = 7
 )
-

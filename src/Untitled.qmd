@@ -1,0 +1,11 @@
+---
+title: "Untitled"
+format: pdf
+---
+
+```{r fig.cap="This is my histogram"}
+library(tidyverse)
+rnorm(1e4, 0, 1) %>% 
+  hist(breaks=100)
+```
+
