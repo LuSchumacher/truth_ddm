@@ -8,20 +8,23 @@ init_fun = function(chains=4){
   L = list()
   for (i in 1:chains) {
     L[[i]] = list(
-      mu_v       = 1.0 + runif(4, -0.5, 0.5),
-      sigma_v    = 0.4 + runif(4, -0.05, 0.05),
-      mu_a       = 2.0 + runif(4, -0.2, 0.2),
-      sigma_a    = 0.4 + runif(4, -0.05, 0.05),
-      mu_bias    = 0.0 + runif(4, -0.05, 0.05),
-      sigma_bias = 0.1 + runif(4, -0.05, 0.05),
-      mu_ndt     = 1 + runif(4, -0.05, 0.05),
-      sigma_ndt  = 0.1 + runif(4, -0.01, 0.01),
-      ndt_s      = 0.05 + runif(1, -0.01, 0.01),
-      z_v        = matrix(runif(4*N, -1, 1), nrow=4),
-      z_a        = matrix(runif(4*N, -1, 1), nrow=4),
-      z_ndt      = matrix(runif(4*N, -1, 1), nrow=4),
-      z_bias     = matrix(runif(4*N, -1, 1), nrow=4),
-      trel       = matrix(runif(4*N, 0.01, 0.99), nrow=4)
+      mu_v        = 1.0 + runif(4, -0.5, 0.5),
+      sigma_v     = 0.4 + runif(4, -0.05, 0.05),
+      mu_a        = 2.5 + runif(4, -0.2, 0.2),
+      sigma_a     = 0.4 + runif(4, -0.05, 0.05),
+      mu_bias     = 0.0 + runif(4, -0.05, 0.05),
+      sigma_bias. = 0.1 + runif(4, -0.05, 0.05),
+      mu_ndt      = 1 + runif(4, -0.05, 0.05),
+      sigma_ndt   = 0.1 + runif(4, -0.01, 0.01),
+      mu_ndt_s    = -2 + runif(4, -0.2, 0.2),
+      sigma_ndt_s = 0.1 + runif(4, -0.01, 0.01),
+      z_v         = matrix(runif(4*N, -1, 1), nrow=4),
+      z_a         = matrix(runif(4*N, -1, 1), nrow=4),
+      z_ndt       = matrix(runif(4*N, -1, 1), nrow=4),
+      z_bias      = matrix(runif(4*N, -1, 1), nrow=4),
+      z_ndt_s     = matrix(runif(4*N, -1, 1), nrow=4),
+      trel        = matrix(runif(4*N, 0.01, 0.99), nrow=4),
+      s           = runif(`T`, 0, 0.1)
     )
   }
   return(L)
@@ -31,11 +34,12 @@ PARAM_NAMES <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
   "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
-  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]"
+  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
+  "transf_mu_ndt_s[1]", "transf_mu_ndt_s[2]", "transf_mu_ndt_s[3]", "transf_mu_ndt_s[4]"
 )
 
 m_full <- cmdstan_model(
-  '../model/full_model_ndt_var.stan',
+  '../model/full_model_ndt_var_new_2.stan',
   cpp_options = list(stan_threads = T)
 )
 
@@ -45,6 +49,7 @@ m_full <- cmdstan_model(
 df_session_1 <- read.csv('../data/data_session_1.csv')
 
 N <- length(unique(df_session_1$id))
+`T` <- nrow(df_session_1)
 stan_data = list(
   `T`           = nrow(df_session_1),
   N             = N,
