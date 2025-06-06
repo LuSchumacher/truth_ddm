@@ -4,7 +4,7 @@ library(cmdstanr)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-init_fun = function(chains=4){
+init_fun <- function(chains = 4){
   L = list()
   for (i in 1:chains) {
     L[[i]] = list(
@@ -35,11 +35,12 @@ PARAM_NAMES <- c(
   "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
   "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
-  "transf_mu_ndt_s[1]", "transf_mu_ndt_s[2]", "transf_mu_ndt_s[3]", "transf_mu_ndt_s[4]"
+  # "transf_mu_ndt_s[1]", "transf_mu_ndt_s[2]", "transf_mu_ndt_s[3]", "transf_mu_ndt_s[4]"
+  "ndt_s"
 )
 
 m_full <- cmdstan_model(
-  '../model/full_model_ndt_var_new_2.stan',
+  '../model/full_model_ndt_var_new.stan',
   cpp_options = list(stan_threads = T)
 )
 
@@ -66,7 +67,7 @@ fit_session_1 <- m_full$sample(
   init = init_fun(),
   max_treedepth = 10,
   adapt_delta = 0.9,
-  refresh = 25,
+  refresh = 50,
   iter_sampling = 2000,
   iter_warmup = 2000,
   chains = 4,
@@ -76,7 +77,7 @@ fit_session_1 <- m_full$sample(
 )
 
 fit_session_1$summary(variables = PARAM_NAMES)
-fit_session_1$save_object("../fits/fit_session_1")
+fit_session_1$save_object("../fits/fit_session_1_one_var_param.rds")
 
 ################################################################################
 # SESSION 2
@@ -100,7 +101,7 @@ fit_session_2 <- m_full$sample(
   init = init_fun(),
   max_treedepth = 10,
   adapt_delta = 0.9,
-  refresh = 10,
+  refresh = 50,
   iter_sampling = 2000,
   iter_warmup = 2000,
   chains = 4,
@@ -134,7 +135,7 @@ fit_exp_2 <- m_full$sample(
   init = init_fun(),
   max_treedepth = 10,
   adapt_delta = 0.9,
-  refresh = 10,
+  refresh = 50,
   iter_sampling = 2000,
   iter_warmup = 2000,
   chains = 4,

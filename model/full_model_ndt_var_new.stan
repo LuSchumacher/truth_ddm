@@ -58,7 +58,7 @@ parameters {
   vector[4] mu_bias;
   vector[4] sigma_bias;
 
-  vector<lower=0,upper=1>[T] s; // for t0 per trial
+  vector<lower=0, upper=1>[T] s; // for t0 per trial
   
   matrix[4, N] z_v;
   matrix[4, N] z_a;
@@ -109,7 +109,7 @@ model {
   mu_ndt     ~ normal(1, 2) T[0, ];
   sigma_ndt  ~ std_normal();
   
-  s ~ uniform(0,1);
+  s          ~ uniform(0, 1);
   ndt_s      ~ normal(0, 3) T[0, ];
   
 
@@ -118,10 +118,10 @@ model {
   	z_v[i]    ~ std_normal();
   	z_a[i]    ~ std_normal();
   	z_bias[i] ~ std_normal();
-  	ndt[i] ~ normal(mu_ndt[i], s_ndt[i]);
+  	ndt[i]    ~ normal(mu_ndt[i], s_ndt[i]);
   }
 
-  for (i in 1:T)  t0[i] = ndt[condition[i],subject_id[i]] + s[i] * ndt_s;
+  for (i in 1:T)  t0[i] = ndt[condition[i], subject_id[i]] + s[i] * ndt_s;
 	
   target += reduce_sum(
     partial_sum_fullddm, rt, 1,
@@ -130,15 +130,15 @@ model {
 }
 
 generated quantities {
-  	vector[4] transf_mu_v;
+  vector[4] transf_mu_v;
 	vector[4] transf_mu_a;
 	vector[4] transf_mu_ndt;
 	vector[4] transf_mu_bias;
 
-    for (i in 1:4) {
-  	    transf_mu_v[i]    = mu_v[i];
-  	    transf_mu_ndt[i]  = mu_ndt[i];
-  	    transf_mu_a[i]    = softplus_r(mu_a[i]);
-  	    transf_mu_bias[i] = inv_logit(mu_bias[i]);
-        }
+  for (i in 1:4) {
+    transf_mu_v[i]    = mu_v[i];
+    transf_mu_ndt[i]  = mu_ndt[i];
+    transf_mu_a[i]    = softplus_r(mu_a[i]);
+    transf_mu_bias[i] = inv_logit(mu_bias[i]);
+  }
 }

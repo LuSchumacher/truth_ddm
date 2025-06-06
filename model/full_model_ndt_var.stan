@@ -91,9 +91,9 @@ transformed parameters {
 
 	for (i in 1:4) {
     v[i]    = mu_v[i] + s_v[i] * z_v[i];
-    a[i]    = softplus(mu_a[i] + s_a[i] * z_a[i,]);
+    a[i]    = softplus(mu_a[i] + s_a[i] * z_a[i]);
     ndt[i]  = minRT[i].* trel[i];
-    bias[i] = inv_logit(mu_bias[i] + s_bias[i] * z_bias[i,]);
+    bias[i] = inv_logit(mu_bias[i] + s_bias[i] * z_bias[i]);
     
     // for the output
   	transf_mu_v[i]    = mu_v[i];
@@ -121,7 +121,7 @@ model {
   	z_v[i]    ~ std_normal();
   	z_a[i]    ~ std_normal();
   	z_bias[i] ~ std_normal();
-  	ndt[i] ~ normal(mu_ndt[i], sigma_ndt[i]);
+  	ndt[i]    ~ normal(mu_ndt[i], sigma_ndt[i]);
   }
 	
   target += reduce_sum(
