@@ -1,6 +1,7 @@
 library(tidyverse)
 library(magrittr)
 library(cmdstanr)
+library(bayesplot)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
@@ -13,16 +14,16 @@ init_fun <- function(chains = 4){
       mu_a        = 2.5 + runif(4, -0.2, 0.2),
       sigma_a     = 0.4 + runif(4, -0.05, 0.05),
       mu_bias     = 0.0 + runif(4, -0.05, 0.05),
-      sigma_bias. = 0.1 + runif(4, -0.05, 0.05),
+      sigma_bias  = 0.1 + runif(4, -0.05, 0.05),
       mu_ndt      = 1 + runif(4, -0.05, 0.05),
       sigma_ndt   = 0.1 + runif(4, -0.01, 0.01),
-      mu_ndt_s    = -2 + runif(4, -0.2, 0.2),
-      sigma_ndt_s = 0.1 + runif(4, -0.01, 0.01),
+      mu_ndt_s    = -2 + runif(1, -0.2, 0.2),
+      sigma_ndt_s = 0.05 + runif(1, -0.01, 0.01),
       z_v         = matrix(runif(4*N, -1, 1), nrow=4),
       z_a         = matrix(runif(4*N, -1, 1), nrow=4),
       z_ndt       = matrix(runif(4*N, -1, 1), nrow=4),
       z_bias      = matrix(runif(4*N, -1, 1), nrow=4),
-      z_ndt_s     = matrix(runif(4*N, -1, 1), nrow=4),
+      z_ndt_s     = runif(N, -1, 1),
       trel        = matrix(runif(4*N, 0.01, 0.99), nrow=4),
       s           = runif(`T`, 0, 0.1)
     )
@@ -36,11 +37,11 @@ PARAM_NAMES <- c(
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
   "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
   # "transf_mu_ndt_s[1]", "transf_mu_ndt_s[2]", "transf_mu_ndt_s[3]", "transf_mu_ndt_s[4]"
-  "ndt_s"
+  "transf_mu_ndt_s", "s_ndt_s", "s_a[1]", "s_a[2]", "s_a[3]", "s_a[4]"
 )
 
 m_full <- cmdstan_model(
-  '../model/full_model_ndt_var_new.stan',
+  '../model/full_model_ndt_var_individual.stan',
   cpp_options = list(stan_threads = T)
 )
 
@@ -65,19 +66,40 @@ stan_data = list(
 fit_session_1 <- m_full$sample(
   data = stan_data,
   init = init_fun(),
-  max_treedepth = 10,
-  adapt_delta = 0.9,
+  max_treedepth = 12,
+  adapt_delta = 0.95,
   refresh = 50,
-  iter_sampling = 2000,
-  iter_warmup = 2000,
+  iter_sampling = 3000,
+  iter_warmup = 3000,
   chains = 4,
   parallel_chains = 4,
   threads_per_chain = 2,
   save_warmup = TRUE
 )
 
-fit_session_1$summary(variables = PARAM_NAMES)
-fit_session_1$save_object("../fits/fit_session_1_one_var_param.rds")
+print(fit_session_1$summary(variables = PARAM_NAMES), n=100)
+mcmc_trace(fit_session_1$draws(inc_warmup = TRUE), n_warmup = 3000, pars=PARAM_NAMES)
+
+fit_session_1$save_object("../fits/fit_session_1_individual_param.rds")
+
+
+#########
+#########
+#########
+#########
+PARAM_NAMES <- c(
+  "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
+  "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
+  "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
+  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
+  # "transf_mu_ndt_s[1]", "transf_mu_ndt_s[2]", "transf_mu_ndt_s[3]", "transf_mu_ndt_s[4]"
+  "transf_mu_ndt_s[1]", "transf_mu_ndt_s[2]", "transf_mu_ndt_s[3]", "transf_mu_ndt_s[4]",
+  "s_ndt_s[1]", "s_ndt_s[2]", "s_ndt_s[3]", "s_ndt_s[4]"
+)
+test_fit <- readRDS("../fits/fit_session_1_new_2.rds")
+mcmc_trace(test_fit$draws(inc_warmup = TRUE), n_warmup = 2000, pars=PARAM_NAMES)
+
+
 
 ################################################################################
 # SESSION 2
