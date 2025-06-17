@@ -8,21 +8,24 @@ library(flextable)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-fit_session_1 <- readRDS("../fits/fit_session_1")
-fit_session_2 <- readRDS("../fits/fit_session_2")
-fit_exp_2 <- readRDS("../fits/fit_exp_2")
+fit_session_1 <- readRDS("../../fits/fit_session_1_ndt_var.rds")
+# fit_session_2 <- readRDS("../../fits/fit_session_2_ndt_var")
+# fit_exp_2 <- readRDS("../../fits/fit_exp_2_ndt_var")
 
-param_names <- c(
+PARAM_NAMES <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
   "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
-  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]"
+  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
+  "transf_mu_ndt_s"
 )
+
+NUM_POST_SAMPLES <- 12000
 
 FONT_SIZE_1 <- 22
 FONT_SIZE_2 <- 20
 FONT_SIZE_3 <- 18
-COLOR_PALETTE <- c('#27374D', '#B70404')
+COLOR_PALETTE <- c('#27374D', '#B70404', '#6F1E29', '#B78F94')
 
 custom_labeller <- labeller(
   parameter = label_parsed,
@@ -33,12 +36,12 @@ custom_labeller <- labeller(
 # Session 1
 #------------------------------------------------------------------------------#
 s1_post_samples <- fit_session_1$draws(
-  variables = param_names,
+  variables = PARAM_NAMES,
   inc_warmup = FALSE,
   format = "draws_matrix"
 )
 s1_post_samples <- as_data_frame(s1_post_samples) %>% 
-  mutate(draw = 1:8000) %>% 
+  mutate(draw = 1:NUM_POST_SAMPLES) %>% 
   pivot_longer(
     cols = starts_with("transf"),
     names_to = c("parameter", "condition"),
@@ -57,11 +60,17 @@ s1_post_samples <- s1_post_samples %>%
     value = as.numeric(value)
   )
 
+s1_post_samples$parameter[is.na(s1_post_samples$parameter)] <- "mu_ndt_sd"
+
 s1_post_samples <- s1_post_samples %>%
   mutate(parameter = factor(
     parameter,
-    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
-    labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias", "mu_ndt_sd"),
+    labels = c(
+      expression(mu[v]), expression(mu[a]),
+      expression(mu[ndt]), expression(mu[bias]),
+      expression(mu[ndt[sd]])
+    )
     )
   )
 
@@ -76,7 +85,7 @@ post_summaries_session_1 <- s1_post_samples %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries_session_1, "../data/post_summaries_session_1.csv")
+write_csv(post_summaries_session_1, "../../data/post_summaries_session_1_ndt_var.csv")
 
 estimates_plot_s1 <- s1_post_samples %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
@@ -108,11 +117,14 @@ estimates_plot_s1 <- s1_post_samples %>%
   )
 
 ggsave(
-  '../plots/01_param_estimates_s1.jpeg',
+  '../../plots/01_param_estimates_s1_ndt_var.jpeg',
   estimates_plot_s1,
   device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
+
+s1_post_samples <- s1_post_samples %>% 
+  filter(parameter != "mu[ndt[sd]]")
 
 ## Contrasts
 contrast_df_s1 <- tibble()
@@ -133,8 +145,8 @@ for (name in unique(s1_post_samples$parameter)){
     ((s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 2] +
         s1_post_samples$value[s1_post_samples$parameter == name & s1_post_samples$condition == 3]) / 2)
   tmp_df <- tibble(
-    "parameter" = rep(name, 8000*3),
-    "effect" = rep(c("Repetition status", "Factual truth", "Interaction"), each = 8000),
+    "parameter" = rep(name, NUM_POST_SAMPLES*3),
+    "effect" = rep(c("Repetition status", "Factual truth", "Interaction"), each = NUM_POST_SAMPLES),
     "value" = c(effect_repetition, effect_truth, effect_interaction)
   )
   contrast_df_s1 <- rbind(contrast_df_s1, tmp_df)
@@ -150,7 +162,7 @@ contrast_session_01 <- contrast_df_s1 %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(contrast_session_01, "../data/contrast_session_01.csv")
+write_csv(contrast_session_01, "../../data/contrast_session_01_ndt_var.csv")
 
 #------------------------------------------------------------------------------#
 # Session 2
@@ -162,7 +174,7 @@ s2_post_samples <- fit_session_2$draws(
 )
 
 s2_post_samples <- as_tibble(s2_post_samples) %>% 
-  mutate(draw = 1:8000) %>% 
+  mutate(draw = 1:NUM_POST_SAMPLES) %>% 
   pivot_longer(
     cols = starts_with("transf"),
     names_to = c("parameter", "condition"),
@@ -232,7 +244,7 @@ estimates_plot_s2 <- s2_post_samples %>%
   )
 
 ggsave(
-  '../plots/01_param_estimates_s2.jpeg',
+  '../../plots/01_param_estimates_s2_ndt_var.jpeg',
   estimates_plot_s2,
   device = 'jpeg', dpi = 300,
   width = 12, height = 6
@@ -257,8 +269,8 @@ for (name in unique(s2_post_samples$parameter)){
     ((s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 2] +
         s2_post_samples$value[s2_post_samples$parameter == name & s2_post_samples$condition == 3]) / 2)
   tmp_df <- tibble(
-    "parameter" = rep(name, 8000*3),
-    "effect" = rep(c("Repetition status", "Factual truth", "Interaction"), each = 8000),
+    "parameter" = rep(name, NUM_POST_SAMPLES*3),
+    "effect" = rep(c("Repetition status", "Factual truth", "Interaction"), each = NUM_POST_SAMPLES),
     "value" = c(effect_repetition, effect_truth, effect_interaction)
   )
   contrast_df_s2 <- rbind(contrast_df_s2, tmp_df)
@@ -274,7 +286,7 @@ contrast_session_02 <- contrast_df_s2 %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(contrast_session_02, "../data/contrast_session_02.csv")
+write_csv(contrast_session_02, "../../data/contrast_session_02_ndt_var.csv")
 
 contrast_df_s1$session <- 1
 contrast_df_s2$session <- 2
@@ -323,7 +335,7 @@ contrast_plot_exp_1 <- contrast_df %>%
   guides(fill = guide_legend(title = "Session"))
 
 ggsave(
-  '../plots/02_contrast_plot_exp_1.jpeg',
+  '../../plots/02_contrast_plot_exp_1_ndt_var.jpeg',
   contrast_plot_exp_1,
   device = 'jpeg', dpi = 300,
   width = 12, height = 7
