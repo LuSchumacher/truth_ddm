@@ -9,8 +9,8 @@ library(flextable)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 fit_session_1 <- readRDS("../../fits/fit_session_1_ndt_var.rds")
-# fit_session_2 <- readRDS("../../fits/fit_session_2_ndt_var")
-# fit_exp_2 <- readRDS("../../fits/fit_exp_2_ndt_var")
+fit_session_2 <- readRDS("../../fits/fit_session_2_ndt_var.rds")
+fit_exp_2 <- readRDS("../../fits/fit_exp_2_ndt_var.rds")
 
 PARAM_NAMES <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
@@ -40,7 +40,7 @@ s1_post_samples <- fit_session_1$draws(
   inc_warmup = FALSE,
   format = "draws_matrix"
 )
-s1_post_samples <- as_data_frame(s1_post_samples) %>% 
+s1_post_samples <- as_tibble(s1_post_samples) %>% 
   mutate(draw = 1:NUM_POST_SAMPLES) %>% 
   pivot_longer(
     cols = starts_with("transf"),
@@ -92,7 +92,7 @@ estimates_plot_s1 <- s1_post_samples %>%
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
   theme_classic() +
-  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_color_manual(guide = "none", values = COLOR_PALETTE) +
   scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
   labs(
     x = 'Factual truth',
@@ -100,7 +100,7 @@ estimates_plot_s1 <- s1_post_samples %>%
     title = 'Group−level Posterior Distributions: Experiment 1, Session 1'
   ) +
   ggthemes::theme_tufte() + 
-  theme(axis.line = element_line(size = .5, color = "#969696"),
+  theme(axis.line = element_line(linewidth = .5, color = "#969696"),
         axis.ticks = element_line(color = "#969696"),
         axis.text.x = element_text(size = FONT_SIZE_3),
         axis.text.y = element_text(size = FONT_SIZE_3),
@@ -168,7 +168,7 @@ write_csv(contrast_session_01, "../../data/contrast_session_01_ndt_var.csv")
 # Session 2
 #------------------------------------------------------------------------------#
 s2_post_samples <- fit_session_2$draws(
-  variables = param_names,
+  variables = PARAM_NAMES,
   inc_warmup = FALSE,
   format = "draws_matrix"
 )
@@ -193,11 +193,17 @@ s2_post_samples <- s2_post_samples %>%
     )
   )
 
+s2_post_samples$parameter[is.na(s2_post_samples$parameter)] <- "mu_ndt_sd"
+
 s2_post_samples <- s2_post_samples %>%
   mutate(parameter = factor(
     parameter,
-    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
-    labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias", "mu_ndt_sd"),
+    labels = c(
+      expression(mu[v]), expression(mu[a]),
+      expression(mu[ndt]), expression(mu[bias]),
+      expression(mu[ndt[sd]])
+    )
   )
   )
 
@@ -212,14 +218,14 @@ post_summaries_session_2 <- s2_post_samples %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries_session_2, "../data/post_summaries_session_2.csv")
+write_csv(post_summaries_session_2, "../../data/post_summaries_session_2_ndt_var.csv")
 
 estimates_plot_s2 <- s2_post_samples %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
   theme_classic() +
-  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_color_manual(guide = "none", values = COLOR_PALETTE) +
   scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
   labs(
     x = 'Factual truth',
@@ -227,7 +233,7 @@ estimates_plot_s2 <- s2_post_samples %>%
     title = 'Group−level Posterior Distributions: Experiment 1, Session 2'
   ) +
   ggthemes::theme_tufte() + 
-  theme(axis.line = element_line(size = .5, color = "#969696"),
+  theme(axis.line = element_line(linewidth = .5, color = "#969696"),
         axis.ticks = element_line(color = "#969696"),
         axis.text.x = element_text(size = FONT_SIZE_3),
         axis.text.y = element_text(size = FONT_SIZE_3),
@@ -249,6 +255,9 @@ ggsave(
   device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
+
+s2_post_samples <- s2_post_samples %>% 
+  filter(parameter != "mu[ndt[sd]]")
 
 ## Contrasts
 contrast_df_s2 <- tibble()
@@ -345,12 +354,12 @@ ggsave(
 # Experiment 2
 #------------------------------------------------------------------------------#
 exp2_post_samples <- fit_exp_2$draws(
-  variables = param_names,
+  variables = PARAM_NAMES,
   inc_warmup = FALSE,
   format = "draws_matrix"
 )
 exp2_post_samples <- as_data_frame(exp2_post_samples) %>% 
-  mutate(draw = 1:8000) %>% 
+  mutate(draw = 1:NUM_POST_SAMPLES) %>% 
   pivot_longer(
     cols = starts_with("transf"),
     names_to = c("parameter", "condition"),
@@ -369,11 +378,17 @@ exp2_post_samples <- exp2_post_samples %>%
     value = as.numeric(value)
   )
 
+exp2_post_samples$parameter[is.na(exp2_post_samples$parameter)] <- "mu_ndt_sd"
+
 exp2_post_samples <- exp2_post_samples %>%
   mutate(parameter = factor(
     parameter,
-    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
-    labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
+    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias", "mu_ndt_sd"),
+    labels = c(
+      expression(mu[v]), expression(mu[a]),
+      expression(mu[ndt]), expression(mu[bias]),
+      expression(mu[ndt[sd]])
+    )
   )
   )
 
@@ -388,14 +403,14 @@ post_summaries_exp_2 <- exp2_post_samples %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries_exp_2, "../data/post_summaries_exp_2.csv")
+write_csv(post_summaries_exp_2, "../../data/post_summaries_exp_2_ndt_var.csv")
 
 estimates_plot_exp2 <- exp2_post_samples %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
   theme_classic() +
-  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_color_manual(guide = "none", values = COLOR_PALETTE) +
   scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
   labs(
     x = 'Factual truth',
@@ -403,7 +418,7 @@ estimates_plot_exp2 <- exp2_post_samples %>%
     title = 'Group−level Posterior Distributions: Experiment 2'
   ) +
   ggthemes::theme_tufte() + 
-  theme(axis.line = element_line(size = .5, color = "#969696"),
+  theme(axis.line = element_line(linewidth = .5, color = "#969696"),
         axis.ticks = element_line(color = "#969696"),
         axis.text.x = element_text(size = FONT_SIZE_3),
         axis.text.y = element_text(size = FONT_SIZE_3),
@@ -420,11 +435,14 @@ estimates_plot_exp2 <- exp2_post_samples %>%
   )
 
 ggsave(
-  '../plots/01_param_estimates_exp2.jpeg',
+  '../../plots/01_param_estimates_exp2_ndt_var.jpeg',
   estimates_plot_exp2,
   device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
+
+exp2_post_samples <- exp2_post_samples %>% 
+  filter(parameter != "mu[ndt[sd]]")
 
 ## Contrasts
 contrast_df_exp2 <- tibble()
@@ -445,8 +463,8 @@ for (name in unique(exp2_post_samples$parameter)){
     ((exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 2] +
         exp2_post_samples$value[exp2_post_samples$parameter == name & exp2_post_samples$condition == 3]) / 2)
   tmp_df <- tibble(
-    "parameter" = rep(name, 8000*3),
-    "effect" = rep(c("Repetition status", "Factual truth", "Interaction"), each = 8000),
+    "parameter" = rep(name, NUM_POST_SAMPLES*3),
+    "effect" = rep(c("Repetition status", "Factual truth", "Interaction"), each = NUM_POST_SAMPLES),
     "value" = c(effect_repetition, effect_truth, effect_interaction)
   )
   contrast_df_exp2 <- rbind(contrast_df_exp2, tmp_df)
@@ -462,7 +480,7 @@ contrast_exp2 <- contrast_df_exp2 %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(contrast_exp2, "../data/contrast_exp2.csv")
+write_csv(contrast_exp2, "../../data/contrast_exp2_ndt_var.csv")
 
 contrast_df_exp2 <- contrast_df_exp2 %>%
   mutate(
@@ -506,7 +524,7 @@ contrast_plot_exp_2 <- contrast_df_exp2 %>%
   )
 
 ggsave(
-  '../plots/02_contrast_plot_exp_2.jpeg',
+  '../../plots/02_contrast_plot_exp_2_ndt_var.jpeg',
   contrast_plot_exp_2,
   device = 'jpeg', dpi = 300,
   width = 12, height = 7

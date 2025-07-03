@@ -37,7 +37,7 @@ s1_post_samples <- fit_session_1$draws(
   inc_warmup = FALSE,
   format = "draws_matrix"
 )
-s1_post_samples <- as_data_frame(s1_post_samples) %>% 
+s1_post_samples <- as_tibble(s1_post_samples) %>% 
   mutate(draw = 1:12000) %>% 
   pivot_longer(
     cols = starts_with("transf"),
