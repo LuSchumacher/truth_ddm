@@ -118,11 +118,13 @@ fit_session_2$save_object("../../fits/fit_session_2_ndt_var.rds")
 ################################################################################
 # EXPERIMENT 2
 ################################################################################
-df_exp_2 <- read.csv('../data/data_exp_2.csv')
+df_exp_2 <- read.csv('../../data/data_exp_2.csv')
+
 
 N <- length(unique(df_exp_2$id))
+`T` <- nrow(df_exp_2)
 stan_data = list(
-  `T`           = nrow(df_exp_2),
+  `T`           = `T`,
   N             = N,
   subject_id    = df_exp_2$id,
   resp          = df_exp_2$resp,
