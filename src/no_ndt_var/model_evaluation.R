@@ -8,9 +8,9 @@ library(flextable)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-fit_session_1 <- readRDS("../fits/fit_session_1_individual_param.rds")
-fit_session_2 <- readRDS("../fits/fit_session_2")
-fit_exp_2 <- readRDS("../fits/fit_exp_2")
+fit_session_1 <- readRDS("../../fits/fit_session_1")
+fit_session_2 <- readRDS("../../fits/fit_session_2")
+fit_exp_2 <- readRDS("../../fits/fit_exp_2")
 
 param_names <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",

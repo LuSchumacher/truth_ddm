@@ -37,7 +37,7 @@ functions {
   }
 }
 
-data {
+  data {
   int<lower=1>                   T;
   int<lower=1>                   N;
   array[T] real<lower=0>         rt;
@@ -104,14 +104,14 @@ transformed parameters {
 model {
   // priors
   mu_v       ~ normal(2, 2);
-  sigma_v    ~ std_normal();
+  sigma_v    ~ normal(0, 1.5);
   mu_a       ~ normal(5, 3);
-  sigma_a    ~ std_normal();
+  sigma_a    ~ normal(0, 1.5);
   
   mu_bias    ~ normal(0, 0.5);
-  sigma_bias ~ std_normal();
-  mu_ndt     ~ normal(1, 2);
-  sigma_ndt  ~ std_normal();
+  sigma_bias ~ normal(0, 1.5);
+  mu_ndt     ~ normal(1, 2)T[0, ];
+  sigma_ndt  ~ normal(0, 1.5);
   
   for (i in 1:4) {
   	z_v[i]    ~ std_normal();
