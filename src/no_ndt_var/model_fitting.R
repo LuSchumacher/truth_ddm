@@ -17,13 +17,10 @@ init_fun <- function(chains = 4){
       sigma_bias  = 0.5 + runif(4, -0.01, 0.01),
       mu_ndt      = 0.1 + runif(4, -0.01, 0.01),
       sigma_ndt   = 0.01 + runif(4, -0.01, 0.01),
-      # mu_ndt_s    = -2 + runif(1, -0.2, 0.2),
-      # sigma_ndt_s = -5 + runif(1, -0.01, 0.01),
       z_v         = matrix(runif(4*N, -1, 1), nrow=4),
       z_a         = matrix(runif(4*N, -1, 1), nrow=4),
       z_ndt       = matrix(runif(4*N, -0.2, 0.2), nrow=4),
       z_bias      = matrix(runif(4*N, -1, 1), nrow=4),
-      # z_ndt_s     = runif(N, 0, 0.1),
       trel        = matrix(runif(4*N, 0.01, 0.99), nrow=4),
       s           = runif(`T`, 0, 0.05)
     )
@@ -35,20 +32,18 @@ PARAM_NAMES <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
   "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
-  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
-  # "transf_mu_ndt_s[1]", "transf_mu_ndt_s[2]", "transf_mu_ndt_s[3]", "transf_mu_ndt_s[4]"
-  "transf_mu_ndt_s", "s_ndt_s"
+  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]"
 )
 
 m_full <- cmdstan_model(
-  '../model/full_model_ndt_var_individual.stan',
+  '../../model/full_model.stan',
   cpp_options = list(stan_threads = T)
 )
 
 ################################################################################
 # SESSION 1
 ################################################################################
-df_session_1 <- read.csv('../data/data_session_1.csv')
+df_session_1 <- read.csv('../../data/data_session_1.csv')
 
 N <- length(unique(df_session_1$id))
 `T` <- nrow(df_session_1)
@@ -80,40 +75,17 @@ fit_session_1 <- m_full$sample(
 print(fit_session_1$summary(variables = PARAM_NAMES), n=100)
 mcmc_trace(fit_session_1$draws(inc_warmup = TRUE), n_warmup = 3000, pars=PARAM_NAMES)
 
-fit_session_1$save_object("../fits/fit_session_1_individual_param.rds")
-
-
-fit_session_1$diagnostic_summary()
-
-#########
-#########
-#########
-#########
-PARAM_NAMES <- c(
-  "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
-  "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
-  "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
-  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
-  "ndt_s"
-)
-test_fit <- readRDS("../fits/fit_session_1_new_2.rds")
-mcmc_trace(test_fit$draws(inc_warmup = TRUE), n_warmup = 2000, pars=PARAM_NAMES)
-
-old_fit <- readRDS("../fits/fit_session_1")
-print(old_fit$summary(variables = PARAM_NAMES), n=100)
-
-one_param_fit <- readRDS("../fits/fit_session_1_one_var_param.rds")
-print(one_param_fit$summary(variables = PARAM_NAMES), n=100)
-one_param_fit$diagnostic_summary()
+fit_session_1$save_object("../../fits/fit_session_1_new.rds")
 
 ################################################################################
 # SESSION 2
 ################################################################################
-df_session_2 <- read.csv('../data/data_session_2.csv')
+df_session_2 <- read.csv('../../data/data_session_2.csv')
 
 N <- length(unique(df_session_2$id))
+`T` <- nrow(df_session_2)
 stan_data = list(
-  `T`           = nrow(df_session_2),
+  `T`           = `T`,
   N             = N,
   subject_id    = df_session_2$id,
   resp          = df_session_2$resp,
@@ -126,11 +98,11 @@ stan_data = list(
 fit_session_2 <- m_full$sample(
   data = stan_data,
   init = init_fun(),
-  max_treedepth = 10,
-  adapt_delta = 0.9,
+  max_treedepth = 12,
+  adapt_delta = 0.95,
   refresh = 50,
-  iter_sampling = 2000,
-  iter_warmup = 2000,
+  iter_sampling = 3000,
+  iter_warmup = 3000,
   chains = 4,
   parallel_chains = 4,
   threads_per_chain = 2,
@@ -138,16 +110,17 @@ fit_session_2 <- m_full$sample(
 )
 
 fit_session_2$summary(variables = PARAM_NAMES)
-fit_session_2$save_object("../fits/fit_session_2")
+fit_session_2$save_object("../../fits/fit_session_2_new.rds")
 
 ################################################################################
 # EXPERIMENT 2
 ################################################################################
-df_exp_2 <- read.csv('../data/data_exp_2.csv')
+df_exp_2 <- read.csv('../../data/data_exp_2.csv')
 
 N <- length(unique(df_exp_2$id))
+`T` <- nrow(df_exp_2)
 stan_data = list(
-  `T`           = nrow(df_exp_2),
+  `T`           = `T`,
   N             = N,
   subject_id    = df_exp_2$id,
   resp          = df_exp_2$resp,
@@ -160,11 +133,11 @@ stan_data = list(
 fit_exp_2 <- m_full$sample(
   data = stan_data,
   init = init_fun(),
-  max_treedepth = 10,
-  adapt_delta = 0.9,
+  max_treedepth = 12,
+  adapt_delta = 0.95,
   refresh = 50,
-  iter_sampling = 2000,
-  iter_warmup = 2000,
+  iter_sampling = 3000,
+  iter_warmup = 3000,
   chains = 4,
   parallel_chains = 4,
   threads_per_chain = 2,
@@ -172,5 +145,5 @@ fit_exp_2 <- m_full$sample(
 )
 
 fit_exp_2$summary(variables = PARAM_NAMES)
-fit_exp_2$save_object("../fits/fit_exp_2")
+fit_exp_2$save_object("../../fits/fit_exp_2_new.rds")
 
