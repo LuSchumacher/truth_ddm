@@ -5,6 +5,8 @@ library(bayesplot)
 library(cmdstanr)
 library(rempsyc)
 library(flextable)
+library(LaplacesDemon)
+library(truncnorm)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
@@ -31,6 +33,59 @@ custom_labeller <- labeller(
   parameter = label_parsed,
   effect = label_value
 )
+
+softplus <- function(x) {
+  log1p(exp(x))
+}
+
+density_at_zero <- function(x) {
+  dens_obj <- density(x, from = min(0, min(x)) - 1, to = max(0, max(x)) + 1)
+  approx(dens_obj$x, dens_obj$y, xout = 0)$y
+}
+
+NUM_PRIOR_SAMPLES <- 1e7
+
+mu_v1_prior <- rnorm(NUM_PRIOR_SAMPLES, 2, 2)
+mu_v2_prior <- rnorm(NUM_PRIOR_SAMPLES, 2, 2)
+mu_v3_prior <- rnorm(NUM_PRIOR_SAMPLES, 2, 2)
+mu_v4_prior <- rnorm(NUM_PRIOR_SAMPLES, 2, 2)
+
+contrast_v_prior <- ((mu_v1_prior + mu_v2_prior) / 2) - ((mu_v3_prior + mu_v4_prior) / 2)
+p_v_prior <- density_at_zero(contrast_v_prior)
+
+mu_a1_prior <- rnorm(NUM_PRIOR_SAMPLES, 5, 3)
+mu_a2_prior <- rnorm(NUM_PRIOR_SAMPLES, 5, 3)
+mu_a3_prior <- rnorm(NUM_PRIOR_SAMPLES, 5, 3)
+mu_a4_prior <- rnorm(NUM_PRIOR_SAMPLES, 5, 3)
+
+a1_prior <- softplus(mu_a1_prior)
+a2_prior <- softplus(mu_a2_prior)
+a3_prior <- softplus(mu_a3_prior)
+a4_prior <- softplus(mu_a4_prior)
+
+contrast_a_prior <- ((a1_prior + a2_prior) / 2) - ((a3_prior + a4_prior) / 2)
+p_a_prior <- density_at_zero(contrast_a_prior)
+
+mu_bias1_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
+mu_bias2_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
+mu_bias3_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
+mu_bias4_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
+
+bias1_prior <- invlogit(mu_bias1_prior)
+bias2_prior <- invlogit(mu_bias2_prior)
+bias3_prior <- invlogit(mu_bias3_prior)
+bias4_prior <- invlogit(mu_bias4_prior)
+
+contrast_bias_prior <- ((bias1_prior + bias2_prior) / 2) - ((bias3_prior + bias4_prior) / 2)
+p_bias_prior <- density_at_zero(contrast_bias_prior)
+
+mu_ndt1_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
+mu_ndt2_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
+mu_ndt3_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
+mu_ndt4_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
+
+contrast_ndt_prior <- ((mu_ndt1_prior + mu_ndt2_prior) / 2) - ((mu_ndt3_prior + mu_ndt4_prior) / 2)
+p_ndt_prior <- density_at_zero(contrast_ndt_prior)
 
 #------------------------------------------------------------------------------#
 # Session 1
@@ -157,9 +212,31 @@ contrast_session_01 <- contrast_df_s1 %>%
   summarise(
     median = median(value),
     ci_low = quantile(value, 0.025),
-    ci_high = quantile(value, 0.975)
+    ci_high = quantile(value, 0.975),
+    p_post = density_at_zero(value)
   ) %>% 
-  ungroup() %>% 
+  ungroup()
+
+# Bayes factors
+contrast_session_01$bf <- NA
+# threshold
+contrast_session_01$bf[1] <- p_a_prior / contrast_session_01$p_post[1]
+contrast_session_01$bf[2] <- p_a_prior / contrast_session_01$p_post[2]
+contrast_session_01$bf[3] <- p_a_prior / contrast_session_01$p_post[3]
+# bias
+contrast_session_01$bf[4] <- p_bias_prior / contrast_session_01$p_post[4]
+contrast_session_01$bf[5] <- p_bias_prior / contrast_session_01$p_post[5]
+contrast_session_01$bf[6] <- p_bias_prior / contrast_session_01$p_post[6]
+# ndt
+contrast_session_01$bf[7] <- p_ndt_prior / contrast_session_01$p_post[7]
+contrast_session_01$bf[8] <- p_ndt_prior / contrast_session_01$p_post[8]
+contrast_session_01$bf[9] <- p_ndt_prior / contrast_session_01$p_post[9]
+# drift
+contrast_session_01$bf[10] <- p_v_prior / contrast_session_01$p_post[10]
+contrast_session_01$bf[11] <- p_v_prior / contrast_session_01$p_post[11]
+contrast_session_01$bf[12] <- p_v_prior / contrast_session_01$p_post[12]
+
+contrast_session_01 <- contrast_session_01 %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
 write_csv(contrast_session_01, "../../data/contrast_session_01_ndt_var.csv")
@@ -285,17 +362,39 @@ for (name in unique(s2_post_samples$parameter)){
   contrast_df_s2 <- rbind(contrast_df_s2, tmp_df)
 }
 
-contrast_session_02 <- contrast_df_s2 %>%
+contrast_session_2 <- contrast_df_s2 %>%
   group_by(parameter, effect) %>%
   summarise(
     median = median(value),
     ci_low = quantile(value, 0.025),
-    ci_high = quantile(value, 0.975)
-  )%>% 
-  ungroup() %>% 
+    ci_high = quantile(value, 0.975),
+    p_post = density_at_zero(value)
+  ) %>% 
+  ungroup()
+
+# Bayes factors
+contrast_session_2$bf <- NA
+# threshold
+contrast_session_2$bf[1] <- p_a_prior / contrast_session_2$p_post[1]
+contrast_session_2$bf[2] <- p_a_prior / contrast_session_2$p_post[2]
+contrast_session_2$bf[3] <- p_a_prior / contrast_session_2$p_post[3]
+# bias
+contrast_session_2$bf[4] <- p_bias_prior / contrast_session_2$p_post[4]
+contrast_session_2$bf[5] <- p_bias_prior / contrast_session_2$p_post[5]
+contrast_session_2$bf[6] <- p_bias_prior / contrast_session_2$p_post[6]
+# ndt
+contrast_session_2$bf[7] <- p_ndt_prior / contrast_session_2$p_post[7]
+contrast_session_2$bf[8] <- p_ndt_prior / contrast_session_2$p_post[8]
+contrast_session_2$bf[9] <- p_ndt_prior / contrast_session_2$p_post[9]
+# drift
+contrast_session_2$bf[10] <- p_v_prior / contrast_session_2$p_post[10]
+contrast_session_2$bf[11] <- p_v_prior / contrast_session_2$p_post[11]
+contrast_session_2$bf[12] <- p_v_prior / contrast_session_2$p_post[12]
+
+contrast_session_2 <- contrast_session_2 %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(contrast_session_02, "../../data/contrast_session_02_ndt_var.csv")
+write_csv(contrast_session_2, "../../data/contrast_session_02_ndt_var.csv")
 
 contrast_df_s1$session <- 1
 contrast_df_s2$session <- 2
@@ -475,9 +574,31 @@ contrast_exp2 <- contrast_df_exp2 %>%
   summarise(
     median = median(value),
     ci_low = quantile(value, 0.025),
-    ci_high = quantile(value, 0.975)
-  )%>% 
-  ungroup() %>% 
+    ci_high = quantile(value, 0.975),
+    p_post = density_at_zero(value)
+  ) %>% 
+  ungroup()
+
+# Bayes factors
+contrast_exp2$bf <- NA
+# threshold
+contrast_exp2$bf[1] <- p_a_prior / contrast_exp2$p_post[1]
+contrast_exp2$bf[2] <- p_a_prior / contrast_exp2$p_post[2]
+contrast_exp2$bf[3] <- p_a_prior / contrast_exp2$p_post[3]
+# bias
+contrast_exp2$bf[4] <- p_bias_prior / contrast_exp2$p_post[4]
+contrast_exp2$bf[5] <- p_bias_prior / contrast_exp2$p_post[5]
+contrast_exp2$bf[6] <- p_bias_prior / contrast_exp2$p_post[6]
+# ndt
+contrast_exp2$bf[7] <- p_ndt_prior / contrast_exp2$p_post[7]
+contrast_exp2$bf[8] <- p_ndt_prior / contrast_exp2$p_post[8]
+contrast_exp2$bf[9] <- p_ndt_prior / contrast_exp2$p_post[9]
+# drift
+contrast_exp2$bf[10] <- p_v_prior / contrast_exp2$p_post[10]
+contrast_exp2$bf[11] <- p_v_prior / contrast_exp2$p_post[11]
+contrast_exp2$bf[12] <- p_v_prior / contrast_exp2$p_post[12]
+
+contrast_exp2 <- contrast_exp2 %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
 write_csv(contrast_exp2, "../../data/contrast_exp2_ndt_var.csv")

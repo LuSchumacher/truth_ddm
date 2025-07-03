@@ -6,8 +6,8 @@ library(tidybayes)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("../no_ndt_var/ddm_simulator.R")
 
-df_s1 <- read_csv('../data/data_session_1.csv')
-df_s2 <- read_csv('../data/data_session_2.csv')
+df_s1 <- read_csv('../../data/data_session_1.csv')
+df_s2 <- read_csv('../../data/data_session_2.csv')
 df_exp2 <- read_csv('../../data/data_exp_2.csv')
 
 FONT_SIZE_1 <- 22
@@ -200,7 +200,7 @@ pred_rt_summaries_s1 <- pred_data_s1 %>%
 
 # write_csv(pred_data_s2, "../data/pred_data_s2.csv")
 
-pred_data_s2 <- read_csv("../data/pred_data_s2.csv")
+pred_data_s2 <- read_csv("../../data/pred_data_s2.csv")
 
 emp_rt_summaries_s2 <- df_s2 %>%
   group_by(stim_type) %>%
@@ -238,80 +238,115 @@ pred_rt_summaries_s2 <- pred_data_s2 %>%
 #------------------------------------------------------------------------------#
 fit_exp_2 <- readRDS("../../fits/fit_exp_2_ndt_var.rds")
 
-
-df_posterior_exp2 %>% select(starts_with("t0"))
-
-df_posterior_exp2 <- as_tibble(
-  fit_exp_2$draws(
-    inc_warmup = FALSE,
-    format = "draws_matrix"
-  )
+df_posterior_exp2 <- fit_exp_2$draws(
+  inc_warmup = FALSE,
+  format = "draws_matrix"
 ) %>%
+  as_tibble() %>%
   mutate(draw = row_number()) %>%
   select(
     draw,
     matches("^v\\[[1-4],\\s?\\d+\\]$"),
     matches("^a\\[[1-4],\\s?\\d+\\]$"),
     matches("^ndt\\[[1-4],\\s?\\d+\\]$"),
-    matches("^bias\\[[1-4],\\s?\\d+\\]$")
+    matches("^bias\\[[1-4],\\s?\\d+\\]$"),
+    matches("^ndt_s\\[\\d+\\]$")
   ) %>%
+  filter(draw %in% idx) %>% 
   pivot_longer(
     cols = -draw,
     names_to = "param_full",
     values_to = "value"
   ) %>%
   mutate(
-    parameter = str_extract(param_full, "^[a-z]+"),  # Capture parameter name (v, a, etc.)
-    condition = as.integer(str_extract(param_full, "(?<=\\[)\\d+")),  # Extract condition (1-4)
-    participant = as.integer(str_extract(param_full, "(?<=,\\s?)\\d+")),  # Extract participant number
+    parameter = str_extract(param_full, "^[a-z_]+"),
+    indices = str_extract_all(param_full, "\\d+"),
+    condition = ifelse(
+      parameter == "ndt_s",
+      NA_integer_,
+      as.integer(sapply(indices, `[`, 1))
+    ),
+    participant = ifelse(
+      parameter == "ndt_s",
+      as.integer(sapply(indices, `[`, 1)),
+      as.integer(sapply(indices, function(x) if(length(x) > 1) x[2] else NA))
+    ),
     value = as.numeric(value)
   ) %>%
   select(draw, parameter, condition, participant, value)
-# 
-# pred_data_exp2 <- tibble()
-# for (i in 1:length(idx)) {
-#   tmp_post <- df_posterior_exp2 %>% 
-#     filter(draw == idx[i])
-#   tmp_pred_data <- tibble()
-#   for (j in 1:nrow(df_exp2)) {
-#     v <- tmp_post$value[
-#       tmp_post$parameter == "v" &
-#         tmp_post$participant == df_exp2$id[j] &
-#         tmp_post$condition == df_exp2$condition[j]
-#     ]
-#     a <- tmp_post$value[
-#       tmp_post$parameter == "a" &
-#         tmp_post$participant == df_exp2$id[j] &
-#         tmp_post$condition == df_exp2$condition[j]
-#     ]
-#     ndt <- tmp_post$value[
-#       tmp_post$parameter == "ndt" &
-#         tmp_post$participant == df_exp2$id[j] &
-#         tmp_post$condition == df_exp2$condition[j]
-#     ]
-#     bias <- tmp_post$value[
-#       tmp_post$parameter == "bias" &
-#         tmp_post$participant == df_exp2$id[j] &
-#         tmp_post$condition == df_exp2$condition[j]
-#     ]
-#     x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
-#     names(x) <- c("resp", "rt")
-#     tmp_pred_data <- tmp_pred_data %>% 
-#       bind_rows(x)
-#   }
-#   tmp_pred_data$id <- df_exp2$id
-#   tmp_pred_data$condition <- df_exp2$condition
-#   tmp_pred_data$resim_id <- i
-#   tmp_pred_data$stim_type <- df_exp2$stim_type
-#   tmp_pred_data$factual_truth <- df_exp2$factual_truth
-#   pred_data_exp2 <- pred_data_exp2 %>% 
-#     bind_rows(tmp_pred_data)
-#   print(paste("Resimulation Nr.", i, "finished"))
-# }
-#   
-# write_csv(pred_data_exp2, "../data/pred_data_exp2.csv")
 
-pred_data_exp2 <- read_csv("../data/pred_data_exp2.csv")
+
+df_post_s_exp_2 <- fit_exp_2$draws(
+  inc_warmup = FALSE,
+  format = "draws_matrix"
+) %>%
+  as_tibble() %>%
+  mutate(draw = row_number()) %>%
+  select(draw, starts_with("s[")) %>%
+  filter(draw %in% idx) %>% 
+  pivot_longer(
+    cols = -draw,
+    names_to = "param_full",
+    values_to = "value"
+  ) %>%
+  mutate(
+    parameter = "s",
+    trial = as.integer(str_extract(param_full, "\\d+")),
+    value = as.numeric(value)
+  ) %>%
+  select(draw, parameter, trial, value)
+  
+pred_data_exp2 <- tibble()
+for (i in 1:length(idx)) {
+  tmp_post <- df_posterior_exp2 %>%
+    filter(draw == idx[i])
+  tmp_s_post <- df_post_s_exp_2 %>% 
+    filter(draw == idx[i])
+  tmp_pred_data <- tibble()
+  for (j in 1:nrow(df_exp2)) {
+    v <- tmp_post$value[
+      tmp_post$parameter == "v" &
+        tmp_post$participant == df_exp2$id[j] &
+        tmp_post$condition == df_exp2$condition[j]
+    ]
+    a <- tmp_post$value[
+      tmp_post$parameter == "a" &
+        tmp_post$participant == df_exp2$id[j] &
+        tmp_post$condition == df_exp2$condition[j]
+    ]
+    ndt <- tmp_post$value[
+      tmp_post$parameter == "ndt" &
+        tmp_post$participant == df_exp2$id[j] &
+        tmp_post$condition == df_exp2$condition[j]
+    ]
+    ndt_s <- tmp_post$value[
+      tmp_post$parameter == "ndt_s" &
+        tmp_post$participant == df_exp2$id[j]
+    ]
+    bias <- tmp_post$value[
+      tmp_post$parameter == "bias" &
+        tmp_post$participant == df_exp2$id[j] &
+        tmp_post$condition == df_exp2$condition[j]
+    ]
+    t0 <- ndt + tmp_s_post$value[j] * ndt_s
+    x <- sample_ddm(v = v, a = a, ndt = t0, bias = bias)
+    names(x) <- c("resp", "rt")
+    tmp_pred_data <- tmp_pred_data %>%
+      bind_rows(x)
+  }
+  tmp_pred_data$id <- df_exp2$id
+  tmp_pred_data$condition <- df_exp2$condition
+  tmp_pred_data$resim_id <- i
+  tmp_pred_data$stim_type <- df_exp2$stim_type
+  tmp_pred_data$factual_truth <- df_exp2$factual_truth
+  pred_data_exp2 <- pred_data_exp2 %>%
+    bind_rows(tmp_pred_data)
+  print(paste("Resimulation Nr.", i, "finished"))
+}
+
+write_csv(pred_data_exp2, "../../data/pred_data_exp2_ndt_var.csv")
+
+# pred_data_exp2 <- read_csv("../../data/pred_data_exp2.csv")
 
 emp_rt_summaries_exp2 <- df_exp2 %>%
   group_by(stim_type) %>%
@@ -460,7 +495,7 @@ pred_rt_summaries_exp2 %>%
   )
 
 ggsave(
-  '../plots/03_rt_quantiles_plot_exp2.jpeg',
+  '../../plots/03_rt_quantiles_plot_exp2_ndt_var.jpeg',
   device = 'jpeg', dpi = 300,
   width = 12, height = 6
 )
@@ -666,7 +701,7 @@ resp_prob_plot_exp2 <- summary_df_exp2 %>%
          color = guide_legend(title=""))
 
 ggsave(
-  '../plots/04_resp_prob_plot_exp2.jpeg',
+  '../../plots/04_resp_prob_plot_exp2_ndt_var.jpeg',
   resp_prob_plot_exp2,
   device = 'jpeg', dpi = 300,
   width = 12, height = 6
