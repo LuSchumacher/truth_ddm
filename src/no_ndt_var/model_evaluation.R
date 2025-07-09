@@ -1,12 +1,9 @@
 library(tidyverse)
 library(magrittr)
-library(rstan)
 library(bayesplot)
 library(cmdstanr)
 library(rempsyc)
 library(flextable)
-library(LaplacesDemon)
-library(truncnorm)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
@@ -17,8 +14,10 @@ fit_exp_2 <- readRDS("../../fits/fit_exp_2.rds")
 param_names <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
   "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
+  "mu_a[1]", "mu_a[2]", "mu_a[3]", "mu_a[4]",
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
-  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]"
+  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
+  "mu_bias[1]", "mu_bias[2]", "mu_bias[3]", "mu_bias[4]"
 )
 
 FONT_SIZE_1 <- 22
@@ -31,17 +30,13 @@ custom_labeller <- labeller(
   effect = label_value
 )
 
-softplus <- function(x) {
-  log1p(exp(x))
-}
-
 density_at_zero <- function(x) {
   dens_obj <- density(x, from = min(0, min(x)) - 1, to = max(0, max(x)) + 1)
   approx(dens_obj$x, dens_obj$y, xout = 0)$y
 }
 
 NUM_POST_SAMPLES <- 12000
-NUM_PRIOR_SAMPLES <- 1e7
+NUM_PRIOR_SAMPLES <- 1e8
 
 mu_v1_prior <- rnorm(NUM_PRIOR_SAMPLES, 2, 2)
 mu_v2_prior <- rnorm(NUM_PRIOR_SAMPLES, 2, 2)
@@ -56,12 +51,7 @@ mu_a2_prior <- rnorm(NUM_PRIOR_SAMPLES, 5, 3)
 mu_a3_prior <- rnorm(NUM_PRIOR_SAMPLES, 5, 3)
 mu_a4_prior <- rnorm(NUM_PRIOR_SAMPLES, 5, 3)
 
-a1_prior <- softplus(mu_a1_prior)
-a2_prior <- softplus(mu_a2_prior)
-a3_prior <- softplus(mu_a3_prior)
-a4_prior <- softplus(mu_a4_prior)
-
-contrast_a_prior <- ((a1_prior + a2_prior) / 2) - ((a3_prior + a4_prior) / 2)
+contrast_a_prior <- ((mu_a1_prior + mu_a2_prior) / 2) - ((mu_a3_prior + mu_a4_prior) / 2)
 p_a_prior <- density_at_zero(contrast_a_prior)
 
 mu_bias1_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
@@ -69,18 +59,13 @@ mu_bias2_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
 mu_bias3_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
 mu_bias4_prior <- rnorm(NUM_PRIOR_SAMPLES, 0, 0.5)
 
-bias1_prior <- invlogit(mu_bias1_prior)
-bias2_prior <- invlogit(mu_bias2_prior)
-bias3_prior <- invlogit(mu_bias3_prior)
-bias4_prior <- invlogit(mu_bias4_prior)
-
-contrast_bias_prior <- ((bias1_prior + bias2_prior) / 2) - ((bias3_prior + bias4_prior) / 2)
+contrast_bias_prior <- ((mu_bias1_prior + mu_bias2_prior) / 2) - ((mu_bias3_prior + mu_bias4_prior) / 2)
 p_bias_prior <- density_at_zero(contrast_bias_prior)
 
-mu_ndt1_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
-mu_ndt2_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
-mu_ndt3_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
-mu_ndt4_prior <- rtruncnorm(NUM_PRIOR_SAMPLES, a=0, mean=1, sd=2)
+mu_ndt1_prior <- rnorm(NUM_PRIOR_SAMPLES, 1, 2)
+mu_ndt2_prior <- rnorm(NUM_PRIOR_SAMPLES, 1, 2)
+mu_ndt3_prior <- rnorm(NUM_PRIOR_SAMPLES, 1, 2)
+mu_ndt4_prior <- rnorm(NUM_PRIOR_SAMPLES, 1, 2)
 
 contrast_ndt_prior <- ((mu_ndt1_prior + mu_ndt2_prior) / 2) - ((mu_ndt3_prior + mu_ndt4_prior) / 2)
 p_ndt_prior <- density_at_zero(contrast_ndt_prior)
@@ -95,9 +80,9 @@ s1_post_samples <- fit_session_1$draws(
 s1_post_samples <- as_tibble(s1_post_samples) %>% 
   mutate(draw = 1:NUM_POST_SAMPLES) %>% 
   pivot_longer(
-    cols = starts_with("transf"),
+    cols = -draw,
     names_to = c("parameter", "condition"),
-    names_pattern = "(mu_\\w+)\\[(\\d+)\\]"
+    names_pattern = "(.*)\\[(\\d+)\\]"
   )
 s1_post_samples <- s1_post_samples %>% 
   mutate(
@@ -112,15 +97,16 @@ s1_post_samples <- s1_post_samples %>%
     value = as.numeric(value)
   )
 
-s1_post_samples <- s1_post_samples %>%
+s1_post_samples_for_summary <- s1_post_samples %>%
+  filter(str_starts(parameter, "transf")) %>% 
   mutate(parameter = factor(
     parameter,
-    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
+    levels = c("transf_mu_v", "transf_mu_a", "transf_mu_ndt", "transf_mu_bias"),
     labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
     )
   )
 
-post_summaries_session_1 <- s1_post_samples %>%
+post_summaries_session_1 <- s1_post_samples_for_summary %>%
   group_by(parameter, condition) %>%
   summarise(
     median = median(value),
@@ -133,12 +119,12 @@ post_summaries_session_1 <- s1_post_samples %>%
 
 write_csv(post_summaries_session_1, "../../data/post_summaries_session_1.csv")
 
-estimates_plot_s1 <- s1_post_samples %>% 
+estimates_plot_s1 <- s1_post_samples_for_summary %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
   theme_classic() +
-  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_color_manual(guide = "none", values = COLOR_PALETTE) +
   scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
   labs(
     x = 'Factual truth',
@@ -146,7 +132,7 @@ estimates_plot_s1 <- s1_post_samples %>%
     title = 'Group−level Posterior Distributions: Experiment 1, Session 1'
   ) +
   ggthemes::theme_tufte() + 
-  theme(axis.line = element_line(size = .5, color = "#969696"),
+  theme(axis.line = element_line(linewidth = .5, color = "#969696"),
         axis.ticks = element_line(color = "#969696"),
         axis.text.x = element_text(size = FONT_SIZE_3),
         axis.text.y = element_text(size = FONT_SIZE_3),
@@ -170,6 +156,11 @@ ggsave(
 )
 
 ## Contrasts
+s1_post_samples %<>%
+  filter(
+    parameter != "transf_mu_bias",
+    parameter != "transf_mu_a"
+  )
 contrast_df_s1 <- tibble()
 for (name in unique(s1_post_samples$parameter)){
   # main effect repetition
@@ -206,6 +197,7 @@ contrast_session_01 <- contrast_df_s1 %>%
   ungroup()
 
 # Bayes factors
+options(scipen = 999)
 contrast_session_01$bf <- NA
 # threshold
 contrast_session_01$bf[1] <- p_a_prior / contrast_session_01$p_post[1]
@@ -241,9 +233,9 @@ s2_post_samples <- fit_session_2$draws(
 s2_post_samples <- as_tibble(s2_post_samples) %>% 
   mutate(draw = 1:NUM_POST_SAMPLES) %>% 
   pivot_longer(
-    cols = starts_with("transf"),
+    cols = -draw,
     names_to = c("parameter", "condition"),
-    names_pattern = "(mu_\\w+)\\[(\\d+)\\]"
+    names_pattern = "(.*)\\[(\\d+)\\]"
   )
 
 s2_post_samples <- s2_post_samples %>% 
@@ -258,15 +250,16 @@ s2_post_samples <- s2_post_samples %>%
     )
   )
 
-s2_post_samples <- s2_post_samples %>%
+s2_post_samples_for_summary <- s2_post_samples %>%
+  filter(str_starts(parameter, "transf")) %>% 
   mutate(parameter = factor(
     parameter,
-    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
+    levels = c("transf_mu_v", "transf_mu_a", "transf_mu_ndt", "transf_mu_bias"),
     labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
   )
   )
 
-post_summaries_session_2 <- s2_post_samples %>%
+post_summaries_session_2 <- s2_post_samples_for_summary %>%
   group_by(parameter, condition) %>%
   summarise(
     median = median(value),
@@ -279,7 +272,7 @@ post_summaries_session_2 <- s2_post_samples %>%
 
 write_csv(post_summaries_session_2, "../../data/post_summaries_session_2.csv")
 
-estimates_plot_s2 <- s2_post_samples %>% 
+estimates_plot_s2 <- s2_post_samples_for_summary %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
@@ -316,6 +309,11 @@ ggsave(
 )
 
 ## Contrasts
+s2_post_samples %<>%
+  filter(
+    parameter != "transf_mu_bias",
+    parameter != "transf_mu_a"
+  )
 contrast_df_s2 <- tibble()
 for (name in unique(s2_post_samples$parameter)){
   # main effect repetition
@@ -436,12 +434,12 @@ exp2_post_samples <- fit_exp_2$draws(
   inc_warmup = FALSE,
   format = "draws_matrix"
 )
-exp2_post_samples <- as_data_frame(exp2_post_samples) %>% 
+exp2_post_samples <- as_tibble(exp2_post_samples) %>% 
   mutate(draw = 1:NUM_POST_SAMPLES) %>% 
   pivot_longer(
-    cols = starts_with("transf"),
+    cols = -draw,
     names_to = c("parameter", "condition"),
-    names_pattern = "(mu_\\w+)\\[(\\d+)\\]"
+    names_pattern = "(.*)\\[(\\d+)\\]"
   )
 exp2_post_samples <- exp2_post_samples %>% 
   mutate(
@@ -456,15 +454,16 @@ exp2_post_samples <- exp2_post_samples %>%
     value = as.numeric(value)
   )
 
-exp2_post_samples <- exp2_post_samples %>%
+exp2_post_samples_for_summary <- exp2_post_samples %>%
+  filter(str_starts(parameter, "transf")) %>% 
   mutate(parameter = factor(
     parameter,
-    levels = c("mu_v", "mu_a", "mu_ndt", "mu_bias"),
+    levels = c("transf_mu_v", "transf_mu_a", "transf_mu_ndt", "transf_mu_bias"),
     labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
   )
   )
 
-post_summaries_exp_2 <- exp2_post_samples %>%
+post_summaries_exp_2 <- exp2_post_samples_for_summary %>%
   group_by(parameter, condition) %>%
   summarise(
     median = median(value),
@@ -477,7 +476,7 @@ post_summaries_exp_2 <- exp2_post_samples %>%
 
 write_csv(post_summaries_exp_2, "../../data/post_summaries_exp_2.csv")
 
-estimates_plot_exp2 <- exp2_post_samples %>% 
+estimates_plot_exp2 <- exp2_post_samples_for_summary %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
@@ -514,6 +513,11 @@ ggsave(
 )
 
 ## Contrasts
+exp2_post_samples %<>%
+  filter(
+    parameter != "transf_mu_bias",
+    parameter != "transf_mu_a"
+  )
 contrast_df_exp2 <- tibble()
 for (name in unique(exp2_post_samples$parameter)){
   # main effect repetition

@@ -5,21 +5,45 @@ library(bayesplot)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
+# init_fun <- function(chains = 4){
+#   L = list()
+#   for (i in 1:chains) {
+#     L[[i]] = list(
+#       mu_v        = 1.0 + runif(4, -0.5, 0.5),
+#       sigma_v     = 0.1 + runif(4, -0.05, 0.05),
+#       mu_a        = 2.5 + runif(4, -0.2, 0.2),
+#       sigma_a     = 0.1 + runif(4, -0.05, 0.05),
+#       mu_bias     = 0.0 + runif(4, -0.05, 0.05),
+#       sigma_bias  = 0.5 + runif(4, -0.01, 0.01),
+#       mu_ndt      = 0.1 + runif(4, -0.01, 0.01),
+#       sigma_ndt   = 0.01 + runif(4, -0.01, 0.01),
+#       z_v         = matrix(runif(4*N, -1, 1), nrow=4),
+#       z_a         = matrix(runif(4*N, -1, 1), nrow=4),
+#       z_ndt       = matrix(runif(4*N, -0.2, 0.2), nrow=4),
+#       z_bias      = matrix(runif(4*N, -1, 1), nrow=4),
+#       trel        = matrix(runif(4*N, 0.01, 0.99), nrow=4),
+#       s           = runif(`T`, 0, 0.05)
+#     )
+#   }
+#   return(L)
+# }
+
+
 init_fun <- function(chains = 4){
   L = list()
   for (i in 1:chains) {
     L[[i]] = list(
-      mu_v        = 1.0 + runif(4, -0.5, 0.5),
-      sigma_v     = 0.1 + runif(4, -0.05, 0.05),
-      mu_a        = 2.5 + runif(4, -0.2, 0.2),
-      sigma_a     = 0.1 + runif(4, -0.05, 0.05),
-      mu_bias     = 0.0 + runif(4, -0.05, 0.05),
-      sigma_bias  = 0.5 + runif(4, -0.01, 0.01),
-      mu_ndt      = 0.1 + runif(4, -0.01, 0.01),
-      sigma_ndt   = 0.01 + runif(4, -0.01, 0.01),
+      mu_v        = rnorm(4, 2, 2),
+      sigma_v     = rnorm(4, 0, 1.5),
+      mu_a        = rnorm(4, 5, 3),
+      sigma_a     = rnorm(4, 0, 1.5),
+      mu_bias     = rnorm(4, 0, 0.5),
+      sigma_bias  = rnorm(4, 0, 1.5),
+      mu_ndt      = 0.5 + runif(4, -0.1, 0.1),
+      sigma_ndt   = 0.05 + runif(4, -0.05, 0.05),
       z_v         = matrix(runif(4*N, -1, 1), nrow=4),
       z_a         = matrix(runif(4*N, -1, 1), nrow=4),
-      z_ndt       = matrix(runif(4*N, -0.2, 0.2), nrow=4),
+      z_ndt       = matrix(runif(4*N, -0.15, 0.15), nrow=4),
       z_bias      = matrix(runif(4*N, -1, 1), nrow=4),
       trel        = matrix(runif(4*N, 0.01, 0.99), nrow=4),
       s           = runif(`T`, 0, 0.05)
@@ -27,6 +51,7 @@ init_fun <- function(chains = 4){
   }
   return(L)
 }
+
 
 PARAM_NAMES <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
@@ -62,11 +87,11 @@ stan_data = list(
 fit_session_1 <- m_full$sample(
   data = stan_data,
   init = init_fun(),
-  max_treedepth = 12,
+  max_treedepth = 15,
   adapt_delta = 0.95,
   refresh = 50,
-  iter_sampling = 3000,
-  iter_warmup = 3000,
+  iter_sampling = 4000,
+  iter_warmup = 4000,
   chains = 4,
   parallel_chains = 4,
   threads_per_chain = 2,

@@ -110,7 +110,7 @@ model {
   
   mu_bias    ~ normal(0, 0.5);
   sigma_bias ~ normal(0, 1.5);
-  mu_ndt     ~ normal(1, 2)T[0, ];
+  mu_ndt     ~ normal(1, 2);//T[0, ];
   sigma_ndt  ~ normal(0, 1.5);
   
   for (i in 1:4) {
