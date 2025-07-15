@@ -5,9 +5,15 @@ mu_a,Repetition status,-0.02,-0.1,0.06,8.89,0.01
 mu_bias,Factual truth,0.01,-0.08,0.09,8.91,0.09
 mu_bias,Interaction,-0.03,-0.11,0.06,7.1,0.11
 mu_bias,Repetition status,0.08,-0.01,0.17,1.83,0.44
+transf_mu_a,Factual truth,0.03,-0.05,0.1,8.33,NA
+transf_mu_a,Interaction,0.04,-0.03,0.11,6.22,NA
+transf_mu_a,Repetition status,-0.02,-0.09,0.06,9.76,NA
+transf_mu_bias,Factual truth,0,-0.02,0.02,41.14,NA
+transf_mu_bias,Interaction,-0.01,-0.03,0.01,33.06,NA
+transf_mu_bias,Repetition status,0.02,-0,0.04,8.81,NA
 transf_mu_ndt,Factual truth,0.01,-0.05,0.07,11.75,0.02
-transf_mu_ndt,Interaction,-0.02,-0.08,0.04,9.89,0.02
-transf_mu_ndt,Repetition status,-0.05,-0.11,0.01,4.62,0.04
+transf_mu_ndt,Interaction,-0.02,-0.08,0.04,9.89,0.03
+transf_mu_ndt,Repetition status,-0.05,-0.11,0.01,4.62,0.02
 transf_mu_v,Factual truth,-0.02,-0.09,0.06,9.17,0.02
 transf_mu_v,Interaction,0.01,-0.06,0.09,9.78,0.02
 transf_mu_v,Repetition status,0.13,0.06,0.21,0.02,8

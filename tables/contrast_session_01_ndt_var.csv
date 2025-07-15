@@ -1,0 +1,19 @@
+parameter,effect,median,ci_low,ci_high,p_post,bf
+mu_a,Factual truth,-0.07,-0.19,0.06,3.55,0.04
+mu_a,Interaction,0.01,-0.11,0.13,6.2,0.02
+mu_a,Repetition status,0.08,-0.04,0.21,2.6,0.05
+mu_bias,Factual truth,-0.07,-0.26,0.14,3.18,0.25
+mu_bias,Interaction,-0.03,-0.24,0.16,3.77,0.21
+mu_bias,Repetition status,0.53,0.33,0.73,0,Inf
+transf_mu_a,Factual truth,-0.06,-0.17,0.05,4.02,NA
+transf_mu_a,Interaction,0.01,-0.1,0.12,6.99,NA
+transf_mu_a,Repetition status,0.07,-0.03,0.18,2.94,NA
+transf_mu_bias,Factual truth,-0.02,-0.06,0.03,13.45,NA
+transf_mu_bias,Interaction,-0.01,-0.06,0.04,15.97,NA
+transf_mu_bias,Repetition status,0.13,0.08,0.17,0,NA
+transf_mu_ndt,Factual truth,-0.04,-0.15,0.08,5.49,0.04
+transf_mu_ndt,Interaction,0,-0.12,0.12,6.44,0.03
+transf_mu_ndt,Repetition status,-0.31,-0.43,-0.2,0,Inf
+transf_mu_v,Factual truth,-0.02,-0.12,0.09,6.65,0.03
+transf_mu_v,Interaction,0.02,-0.09,0.13,6.75,0.03
+transf_mu_v,Repetition status,0.18,0.07,0.29,0.06,3.35

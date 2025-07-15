@@ -117,7 +117,7 @@ post_summaries_session_1 <- s1_post_samples_for_summary %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries_session_1, "../../data/post_summaries_session_1.csv")
+write_csv(post_summaries_session_1, "../../tables/post_summaries_session_1.csv")
 
 estimates_plot_s1 <- s1_post_samples_for_summary %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
@@ -153,6 +153,13 @@ ggsave(
   estimates_plot_s1,
   device = 'jpeg', dpi = 300,
   width = 12, height = 6
+)
+
+ggsave(
+  '../../plots/01_param_estimates_s1.pdf',
+  estimates_plot_s1,
+  device = 'pdf', dpi = 600,
+  width = 12, height = 7
 )
 
 ## Contrasts
@@ -208,18 +215,18 @@ contrast_session_01$bf[4] <- p_bias_prior / contrast_session_01$p_post[4]
 contrast_session_01$bf[5] <- p_bias_prior / contrast_session_01$p_post[5]
 contrast_session_01$bf[6] <- p_bias_prior / contrast_session_01$p_post[6]
 # ndt
-contrast_session_01$bf[7] <- p_ndt_prior / contrast_session_01$p_post[7]
-contrast_session_01$bf[8] <- p_ndt_prior / contrast_session_01$p_post[8]
-contrast_session_01$bf[9] <- p_ndt_prior / contrast_session_01$p_post[9]
+contrast_session_01$bf[7+6] <- p_ndt_prior / contrast_session_01$p_post[7+6]
+contrast_session_01$bf[8+6] <- p_ndt_prior / contrast_session_01$p_post[8+6]
+contrast_session_01$bf[9+6] <- p_ndt_prior / contrast_session_01$p_post[9+6]
 # drift
-contrast_session_01$bf[10] <- p_v_prior / contrast_session_01$p_post[10]
-contrast_session_01$bf[11] <- p_v_prior / contrast_session_01$p_post[11]
-contrast_session_01$bf[12] <- p_v_prior / contrast_session_01$p_post[12]
+contrast_session_01$bf[10+6] <- p_v_prior / contrast_session_01$p_post[10+6]
+contrast_session_01$bf[11+6] <- p_v_prior / contrast_session_01$p_post[11+6]
+contrast_session_01$bf[12+6] <- p_v_prior / contrast_session_01$p_post[12+6]
 
 contrast_session_01 <- contrast_session_01 %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(contrast_session_01, "../../data/contrast_session_01.csv")
+write_csv(contrast_session_01, "../../tables/contrast_session_01.csv")
 
 #------------------------------------------------------------------------------#
 # Session 2
@@ -270,14 +277,14 @@ post_summaries_session_2 <- s2_post_samples_for_summary %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries_session_2, "../../data/post_summaries_session_2.csv")
+write_csv(post_summaries_session_2, "../../tables/post_summaries_session_2.csv")
 
 estimates_plot_s2 <- s2_post_samples_for_summary %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
   theme_classic() +
-  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_color_manual(guide = "none", values = COLOR_PALETTE) +
   scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
   labs(
     x = 'Factual truth',
@@ -285,7 +292,7 @@ estimates_plot_s2 <- s2_post_samples_for_summary %>%
     title = 'Group−level Posterior Distributions: Experiment 1, Session 2'
   ) +
   ggthemes::theme_tufte() + 
-  theme(axis.line = element_line(size = .5, color = "#969696"),
+  theme(axis.line = element_line(linewidth = .5, color = "#969696"),
         axis.ticks = element_line(color = "#969696"),
         axis.text.x = element_text(size = FONT_SIZE_3),
         axis.text.y = element_text(size = FONT_SIZE_3),
@@ -308,12 +315,14 @@ ggsave(
   width = 12, height = 6
 )
 
+ggsave(
+  '../../plots/01_param_estimates_s2.pdf',
+  estimates_plot_s2,
+  device = 'pdf', dpi = 600,
+  width = 12, height = 7
+)
+
 ## Contrasts
-s2_post_samples %<>%
-  filter(
-    parameter != "transf_mu_bias",
-    parameter != "transf_mu_a"
-  )
 contrast_df_s2 <- tibble()
 for (name in unique(s2_post_samples$parameter)){
   # main effect repetition
@@ -360,28 +369,32 @@ contrast_session_2$bf[4] <- p_bias_prior / contrast_session_2$p_post[4]
 contrast_session_2$bf[5] <- p_bias_prior / contrast_session_2$p_post[5]
 contrast_session_2$bf[6] <- p_bias_prior / contrast_session_2$p_post[6]
 # ndt
-contrast_session_2$bf[7] <- p_ndt_prior / contrast_session_2$p_post[7]
-contrast_session_2$bf[8] <- p_ndt_prior / contrast_session_2$p_post[8]
-contrast_session_2$bf[9] <- p_ndt_prior / contrast_session_2$p_post[9]
+contrast_session_2$bf[7+6] <- p_ndt_prior / contrast_session_2$p_post[7+6]
+contrast_session_2$bf[8+6] <- p_ndt_prior / contrast_session_2$p_post[8+6]
+contrast_session_2$bf[9+6] <- p_ndt_prior / contrast_session_2$p_post[9+6]
 # drift
-contrast_session_2$bf[10] <- p_v_prior / contrast_session_2$p_post[10]
-contrast_session_2$bf[11] <- p_v_prior / contrast_session_2$p_post[11]
-contrast_session_2$bf[12] <- p_v_prior / contrast_session_2$p_post[12]
+contrast_session_2$bf[10+6] <- p_v_prior / contrast_session_2$p_post[10+6]
+contrast_session_2$bf[11+6] <- p_v_prior / contrast_session_2$p_post[11+6]
+contrast_session_2$bf[12+6] <- p_v_prior / contrast_session_2$p_post[12+6]
 
 contrast_session_2 <- contrast_session_2 %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(contrast_session_2, "../../data/contrast_session_02.csv")
+write_csv(contrast_session_2, "../../tables/contrast_session_02.csv")
 
 contrast_df_s1$session <- 1
 contrast_df_s2$session <- 2
 contrast_df <- rbind(contrast_df_s1, contrast_df_s2)
 
 contrast_df <- contrast_df %>%
+  filter(
+    parameter != "mu_a",
+    parameter != "mu_bias"
+  ) %>% 
   mutate(
     parameter = factor(
       parameter,
-      levels = c("mu[v]", "mu[a]", "mu[ndt]", "mu[bias]"),
+      levels = c("transf_mu_v", "transf_mu_a", "transf_mu_ndt", "transf_mu_bias"),
       labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
     ),
     session = factor(session)
@@ -423,6 +436,13 @@ ggsave(
   '../../plots/02_contrast_plot_exp_1.jpeg',
   contrast_plot_exp_1,
   device = 'jpeg', dpi = 300,
+  width = 12, height = 7
+)
+
+ggsave(
+  '../../plots/02_contrast_plot_exp_1.pdf',
+  contrast_plot_exp_1,
+  device = 'pdf', dpi = 600,
   width = 12, height = 7
 )
 
@@ -474,14 +494,14 @@ post_summaries_exp_2 <- exp2_post_samples_for_summary %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries_exp_2, "../../data/post_summaries_exp_2.csv")
+write_csv(post_summaries_exp_2, "../../tables/post_summaries_exp_2.csv")
 
 estimates_plot_exp2 <- exp2_post_samples_for_summary %>% 
   ggplot(aes(x = factual_truth, y = value, colour = stim_type, fill = stim_type)) +
   geom_violin() +
   facet_wrap(~parameter, scales = "free", labeller = custom_labeller) +
   theme_classic() +
-  scale_color_manual(guide = FALSE, values = COLOR_PALETTE) +
+  scale_color_manual(guide = "none", values = COLOR_PALETTE) +
   scale_fill_manual(name = "Repetition status", values = COLOR_PALETTE) + 
   labs(
     x = 'Factual truth',
@@ -489,7 +509,7 @@ estimates_plot_exp2 <- exp2_post_samples_for_summary %>%
     title = 'Group−level Posterior Distributions: Experiment 2'
   ) +
   ggthemes::theme_tufte() + 
-  theme(axis.line = element_line(size = .5, color = "#969696"),
+  theme(axis.line = element_line(linewidth = .5, color = "#969696"),
         axis.ticks = element_line(color = "#969696"),
         axis.text.x = element_text(size = FONT_SIZE_3),
         axis.text.y = element_text(size = FONT_SIZE_3),
@@ -512,12 +532,14 @@ ggsave(
   width = 12, height = 6
 )
 
+ggsave(
+  '../../plots/01_param_estimates_exp2.pdf',
+  estimates_plot_exp2,
+  device = 'pdf', dpi = 600,
+  width = 12, height = 7
+)
+
 ## Contrasts
-exp2_post_samples %<>%
-  filter(
-    parameter != "transf_mu_bias",
-    parameter != "transf_mu_a"
-  )
 contrast_df_exp2 <- tibble()
 for (name in unique(exp2_post_samples$parameter)){
   # main effect repetition
@@ -564,24 +586,28 @@ contrast_exp2$bf[4] <- p_bias_prior / contrast_exp2$p_post[4]
 contrast_exp2$bf[5] <- p_bias_prior / contrast_exp2$p_post[5]
 contrast_exp2$bf[6] <- p_bias_prior / contrast_exp2$p_post[6]
 # ndt
-contrast_exp2$bf[7] <- p_ndt_prior / contrast_exp2$p_post[7]
-contrast_exp2$bf[8] <- p_ndt_prior / contrast_exp2$p_post[8]
-contrast_exp2$bf[9] <- p_ndt_prior / contrast_exp2$p_post[9]
+contrast_exp2$bf[7+6] <- p_ndt_prior / contrast_exp2$p_post[7]
+contrast_exp2$bf[8+6] <- p_ndt_prior / contrast_exp2$p_post[8]
+contrast_exp2$bf[9+6] <- p_ndt_prior / contrast_exp2$p_post[9]
 # drift
-contrast_exp2$bf[10] <- p_v_prior / contrast_exp2$p_post[10]
-contrast_exp2$bf[11] <- p_v_prior / contrast_exp2$p_post[11]
-contrast_exp2$bf[12] <- p_v_prior / contrast_exp2$p_post[12]
+contrast_exp2$bf[10+6] <- p_v_prior / contrast_exp2$p_post[10+6]
+contrast_exp2$bf[11+6] <- p_v_prior / contrast_exp2$p_post[11+6]
+contrast_exp2$bf[12+6] <- p_v_prior / contrast_exp2$p_post[12+6]
 
 contrast_exp2 <- contrast_exp2 %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(contrast_exp2, "../../data/contrast_exp2.csv")
+write_csv(contrast_exp2, "../../tables/contrast_exp2.csv")
 
 contrast_df_exp2 <- contrast_df_exp2 %>%
+  filter(
+    parameter != "mu_a",
+    parameter != "mu_bias",
+  ) %>% 
   mutate(
     parameter = factor(
       parameter,
-      levels = c("mu[v]", "mu[a]", "mu[ndt]", "mu[bias]"),
+      levels = c("transf_mu_v", "transf_mu_a", "transf_mu_ndt", "transf_mu_bias"),
       labels = c(expression(mu[v]), expression(mu[a]), expression(mu[ndt]), expression(mu[bias]))
     )
   )
@@ -622,5 +648,12 @@ ggsave(
   '../../plots/02_contrast_plot_exp_2.jpeg',
   contrast_plot_exp_2,
   device = 'jpeg', dpi = 300,
+  width = 12, height = 7
+)
+
+ggsave(
+  '../../plots/02_contrast_plot_exp_2.pdf',
+  contrast_plot_exp_2,
+  device = 'pdf', dpi = 600,
   width = 12, height = 7
 )

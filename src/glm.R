@@ -19,7 +19,7 @@ FONT_SIZE_3 <- 18
 COLOR_PALETTE <- c('#27374D', '#B70404')
 
 #------------------------------------------------------------------------------#
-# Experiment 1
+# Retention interval: Experiment 1
 #------------------------------------------------------------------------------#
 df_session_1 <- read.csv('../data/data_session_1.csv')
 df_session_2 <- read.csv('../data/data_session_2.csv')
@@ -128,7 +128,6 @@ fixed_effects$parameter <- factor(
   labels = PARAM_NAMES
 )
 
-# plotting
 bf_plot <- fixed_effects %>%
   filter(
     parameter != PARAM_NAMES[1]
@@ -214,7 +213,7 @@ post_summaries <- fixed_effects %>%
 write_csv(post_summaries, "../data/post_summaries_hlm_exp1.csv")
 
 #------------------------------------------------------------------------------#
-# Experiment 2
+# Retention interval: Experiment 2
 #------------------------------------------------------------------------------#
 df_exp2 <- read.csv('../data/data_exp_2.csv') %>% 
   mutate(
@@ -291,7 +290,6 @@ fixed_effects$parameter <- factor(
   labels = PARAM_NAMES[c(1, 3, 4, 6)]
 )
 
-# plotting
 bf_plot <- fixed_effects %>%
   filter(
     parameter != PARAM_NAMES[1]
@@ -364,7 +362,6 @@ ggsave(
   dpi=300, width = 10, height = 4
 )
 
-
 post_summaries <- fixed_effects %>% 
   group_by(parameter) %>% 
   summarise(
@@ -379,7 +376,9 @@ post_summaries <- fixed_effects %>%
 write_csv(post_summaries, "../data/post_summaries_hlm_exp2.csv")
 
 
-# Model on reading time
+#------------------------------------------------------------------------------#
+# Reading time: Experiment 2
+#------------------------------------------------------------------------------#
 formula <- rt_question ~ stim_type * factual_truth + (1 + stim_type * factual_truth | id)
 
 priors <- prior(normal(0, 1.0), class = b)
