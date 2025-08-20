@@ -167,7 +167,7 @@ stan_data <- list(
   minRT         = tapply(df_exp_2$rt, list(df_exp_2$condition, df_exp_2$id), min)
 )
 
-fit_df_exp_2 <- truth_ddm$sample(
+fit_exp_2 <- truth_ddm$sample(
   data = stan_data,
   init = init_fun(n=N),
   max_treedepth = 12,
@@ -181,6 +181,6 @@ fit_df_exp_2 <- truth_ddm$sample(
   save_warmup = TRUE
 )
 
-print(fit_df_exp_2$summary(variables = PARAM_NAMES), n=100)
-mcmc_trace(fit_df_exp_2$draws(), pars=PARAM_NAMES, facet_args = list(ncol = 4))
-fit_df_exp_2$save_object("../fits/fit_df_exp_2.rds")
+print(fit_exp_2$summary(variables = PARAM_NAMES), n=100)
+mcmc_trace(fit_exp_2$draws(), pars=PARAM_NAMES, facet_args = list(ncol = 4))
+fit_exp_2$save_object("../fits/fit_exp_2.rds")

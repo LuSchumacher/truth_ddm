@@ -21,8 +21,8 @@ COLOR_PALETTE <- c('#27374D', '#B70404')
 #------------------------------------------------------------------------------#
 # Retention interval: Experiment 1
 #------------------------------------------------------------------------------#
-df_session_1 <- read.csv('../data/data_session_1.csv')
-df_session_2 <- read.csv('../data/data_session_2.csv')
+df_session_1 <- read_csv('../data/data_session_1.csv')
+df_session_2 <- read_csv('../data/data_session_2.csv')
 
 df_exp1 <- rbind(df_session_1, df_session_2) %>% 
   mutate(
@@ -170,20 +170,16 @@ bf_plot <- fixed_effects %>%
   ggthemes::theme_tufte() +
   labs(
     x = 'Posterior estimate',
-    y = "Density",
-    title = 'Group-level Parameter Estimates: Experiment 1'
+    y = "Density"
   ) +
   theme(
-    axis.line = element_line(size = .5, color = "#969696"),
+    axis.line = element_line(linewidth = .5, color = "#969696"),
       axis.ticks = element_line(color = "#969696"),
-      axis.text.x = element_text(size = FONT_SIZE_3),
-      axis.text.y = element_text(size = FONT_SIZE_3),
-      strip.text.x = element_text(size = FONT_SIZE_3),
-      strip.text.y = element_text(size = FONT_SIZE_3, angle = 0),
+      axis.text.x = element_text(size = FONT_SIZE_2),
+      axis.text.y = element_text(size = FONT_SIZE_2),
+      strip.text.x = element_text(size = FONT_SIZE_2),
+      strip.text.y = element_text(size = FONT_SIZE_2, angle = 0),
       text = element_text(size = FONT_SIZE_2),
-      plot.title = element_text(
-        size = FONT_SIZE_1, hjust = 0.5, face = 'bold'
-      ),
       panel.grid.major = element_line(color = alpha("gray70", 0.3)),
       panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
       panel.background = element_blank(),
@@ -192,11 +188,10 @@ bf_plot <- fixed_effects %>%
       panel.spacing = unit(1, "lines")
   )
 
-bf_plot
-
 ggsave(
-  "../plots/bf_plot_exp1.jpeg",
-  dpi=300, width = 10, height = 8
+  "../plots/01_glm_exp1.jpeg",
+  bf_plot,
+  dpi=300, width = 12, height = 8
 )
 
 post_summaries <- fixed_effects %>% 
@@ -210,7 +205,7 @@ post_summaries <- fixed_effects %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries, "../data/post_summaries_hlm_exp1.csv")
+write_csv(post_summaries, "../tables/hlm_post_summaries_exp1.csv")
 
 #------------------------------------------------------------------------------#
 # Retention interval: Experiment 2
@@ -238,8 +233,6 @@ model_exp2 <- brm(
   file = "../fits/hlm_fit_exp2",
   sample_prior = "yes"
 )
-
-model_exp2
 
 # hypothesis test
 hyp_rep <- "stim_type1 = 0"
@@ -332,20 +325,16 @@ bf_plot <- fixed_effects %>%
   ggthemes::theme_tufte() +
   labs(
     x = 'Posterior estimate',
-    y = "Density",
-    title = 'Group-level Parameter Estimates: Experiment 2'
+    y = "Density"
   ) +
   theme(
-    axis.line = element_line(size = .5, color = "#969696"),
+    axis.line = element_line(linewidth = .5, color = "#969696"),
     axis.ticks = element_line(color = "#969696"),
     axis.text.x = element_text(size = FONT_SIZE_3),
     axis.text.y = element_text(size = FONT_SIZE_3),
     strip.text.x = element_text(size = FONT_SIZE_3),
     strip.text.y = element_text(size = FONT_SIZE_3, angle = 0),
     text = element_text(size = FONT_SIZE_2),
-    plot.title = element_text(
-      size = FONT_SIZE_1, hjust = 0.5, face = 'bold'
-    ),
     panel.grid.major = element_line(color = alpha("gray70", 0.3)),
     panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
     panel.background = element_blank(),
@@ -354,12 +343,10 @@ bf_plot <- fixed_effects %>%
     panel.spacing = unit(1, "lines")
   )
 
-bf_plot
-
 ggsave(
-  "../plots/bf_plot_exp2.jpeg",
+  "../plots/01_glm_exp2.jpeg",
   bf_plot,
-  dpi=300, width = 10, height = 4
+  dpi=300, width = 12, height = 3
 )
 
 post_summaries <- fixed_effects %>% 
@@ -373,7 +360,7 @@ post_summaries <- fixed_effects %>%
   ungroup() %>% 
   mutate(across(where(is.numeric), ~ round(.x, 2)))
 
-write_csv(post_summaries, "../data/post_summaries_hlm_exp2.csv")
+write_csv(post_summaries, "../tables/hlm_post_summaries_exp2.csv")
 
 
 #------------------------------------------------------------------------------#
