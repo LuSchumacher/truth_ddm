@@ -213,8 +213,7 @@ effects_plot_exp1 <- ggplot(post, aes(x = value_diff, fill = session, color = se
     panel.spacing = unit(1.2, "lines"),
     legend.position = "bottom",
     legend.margin = margin(t = -5, r = 0, b = 0, l = 0),
-    legend.spacing.y = unit(0.2, "cm"),
-    plot.title = element_text(size = FONT_SIZE_1, hjust = 0.5)
+    legend.spacing.y = unit(0.2, "cm")
   )
 
 ggsave(
@@ -272,8 +271,7 @@ effects_plot_exp2 <- ggplot(post_exp2, aes(x = value_diff)) +
     panel.grid.minor = element_line(color = scales::alpha("gray70", 0.15)),
     panel.background = element_blank(),
     panel.spacing = unit(1.2, "lines"),
-    legend.position = "none",
-    plot.title = element_text(size = FONT_SIZE_1, hjust = 0.5)
+    legend.position = "none"
   )
 
 ggsave(
@@ -282,6 +280,3 @@ ggsave(
   device = 'jpeg', dpi = 300,
   width = 12, height = 9
 )
-
-
-
