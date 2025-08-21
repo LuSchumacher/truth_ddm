@@ -5,36 +5,25 @@ library(cmdstanr)
 library(patchwork)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-source("ddm_simulator.R")
-
-softmax <- function(x) {
-  exp_x <- exp(x)
-  return(exp_x / sum(exp_x))
-}
+source("0_ddm_simulator.R")
 
 softplus <- function(x) {
   y <- ifelse(x > 20, x + log1p(exp(-x)), log1p(exp(x)))
   return(y)
 }
 
-softplus_r <- function(x) {
-  if (x > 20) {
-    return(x + log1p(exp(-x)))
-  } else {
-    return(log1p(exp(x)))
-  }
-}
-
 df <- read_csv('../data/data_session_1.csv')
 
 NUM_SIM <- 50
-NUM_SUBS <- 75
+NUM_SUBS <- length(unique(df$id))
 
 PARAM_NAMES <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
   "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
+  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
-  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]"
+  "transf_mu_ndt_var[1]", "transf_mu_ndt_var[2]", "transf_mu_ndt_var[3]", "transf_mu_ndt_var[4]"
+
 )
 
 FONT_SIZE_1 <- 22
@@ -44,15 +33,17 @@ FONT_SIZE_3 <- 18
 #------------------------------------------------------------------------------#
 # Parameter sampling
 #------------------------------------------------------------------------------#
-# mu_v <- rnorm(4 * NUM_SIM, 2, 1)
-# mu_a <- rnorm(4 * NUM_SIM, 3, 0.5)
+# mu_v <- rnorm(4 * NUM_SIM, 0, 0.5)
+# mu_a <- rnorm(4 * NUM_SIM, 2, 0.5)
 # mu_bias <- rnorm(4 * NUM_SIM, 0, 0.2)
-# mu_ndt <- rnorm(4 * NUM_SIM, 1, 1)
+# mu_ndt <- rnorm(4 * NUM_SIM, 1.5, 0.75)
+# mu_ndt_var <- rnorm(4 * NUM_SIM, 0.5, 0.5)
 # 
-# sigma_v <- as.vector(apply(matrix(rnorm(4 * NUM_SIM, 0, 1), nrow = 4), 2, softmax))
-# sigma_a <- as.vector(apply(matrix(rnorm(4 * NUM_SIM, 0, 1), nrow = 4), 2, softmax))
-# sigma_bias <- as.vector(apply(matrix(rnorm(4 * NUM_SIM, 0, 1), nrow = 4), 2, softmax))
-# sigma_ndt <- as.vector(apply(matrix(rnorm(4 * NUM_SIM, 0, 1), nrow = 4), 2, softmax))
+# sigma_v <- softplus(rnorm(NUM_SIM, -2, 0.75))
+# sigma_a <- softplus(rnorm(NUM_SIM, -2, 0.75))
+# sigma_bias <- softplus(rnorm(NUM_SIM, -2, 0.75))
+# sigma_ndt <- softplus(rnorm(NUM_SIM, -2, 0.75))
+# sigma_ndt_var <- softplus(rnorm(NUM_SIM, -2, 0.75))
 # 
 # sim_id <- rep(1:NUM_SIM, each = 4)
 # condition <- rep(1:4, times = NUM_SIM)
@@ -63,47 +54,51 @@ FONT_SIZE_3 <- 18
 #   "mu_a" = mu_a,
 #   "mu_bias" = mu_bias,
 #   "mu_ndt" = mu_ndt,
-#   "sigma_v" = sigma_v,
-#   "sigma_a" = sigma_a,
-#   "sigma_bias" = sigma_bias,
-#   "sigma_ndt" = sigma_ndt
+#   "mu_ndt_var" = mu_ndt_var,
 # )
 # 
-# group_params$tranf_a <- softplus(group_params$mu_a)
-# group_params$tranf_ndt <- softplus(group_params$mu_ndt)
-# group_params$tranf_bias <- invlogit(group_params$mu_bias)
+# group_params$tranf_mu_a <- softplus(group_params$mu_a)
+# group_params$tranf_mu_bias <- invlogit(group_params$mu_bias)
+# group_params$tranf_mu_ndt <- softplus(group_params$mu_ndt)
+# group_params$tranf_mu_ndt_var <- softplus(group_params$mu_ndt_var)
 # 
 # individual_params <- tibble()
 # for (i in 1:NUM_SIM) {
-#   
+# 
 #   v <- matrix(0, nrow = 4, ncol = NUM_SUBS)
 #   a <- matrix(0, nrow = 4, ncol = NUM_SUBS)
 #   bias <- matrix(0, nrow = 4, ncol = NUM_SUBS)
 #   ndt <- matrix(0, nrow = 4, ncol = NUM_SUBS)
-#   
+#   ndt_var <- matrix(0, nrow = 4, ncol = NUM_SUBS)
+# 
 #   for (j in 1:4) {
 #     v[j, ] <- rnorm(
 #       NUM_SUBS,
 #       group_params$mu_v[group_params$sim_id == i & group_params$condition == j],
-#       group_params$sigma_v[group_params$sim_id == i & group_params$condition == j]
+#       sigma_v[i]
 #     )
 #     a[j, ] <- softplus(rnorm(
 #       NUM_SUBS,
 #       group_params$mu_a[group_params$sim_id == i & group_params$condition == j],
-#       group_params$sigma_a[group_params$sim_id == i & group_params$condition == j]
+#       sigma_a[i]
 #     ))
 #     bias[j, ] <- invlogit(rnorm(
 #       NUM_SUBS,
 #       group_params$mu_bias[group_params$sim_id == i & group_params$condition == j],
-#       group_params$sigma_bias[group_params$sim_id == i & group_params$condition == j]
+#       sigma_bias[i]
 #     ))
 #     ndt[j, ] <- softplus(rnorm(
 #       NUM_SUBS,
 #       group_params$mu_ndt[group_params$sim_id == i & group_params$condition == j],
-#       group_params$sigma_ndt[group_params$sim_id == i & group_params$condition == j]
+#       sigma_ndt[i]
+#     ))
+#     ndt_var[j, ] <- softplus(rnorm(
+#       NUM_SUBS,
+#       group_params$mu_ndt_var[group_params$sim_id == i & group_params$condition == j],
+#       sigma_ndt_var[i]
 #     ))
 #   }
-#   
+# 
 #   sim_id <- rep(i, 4*NUM_SUBS)
 #   condition <- rep(1:4, times = NUM_SUBS)
 #   id <- rep(1:NUM_SUBS, each = 4)
@@ -114,18 +109,22 @@ FONT_SIZE_3 <- 18
 #     "v" = as.vector(v),
 #     "a" = as.vector(a),
 #     "bias" = as.vector(bias),
-#     "ndt" = as.vector(ndt)
+#     "ndt" = as.vector(ndt),
+#     "ndt_var" = as.vector(ndt_var),
 #   )
-#   individual_params <- individual_params %>% 
+#   individual_params <- individual_params %>%
 #     bind_rows(tmp_params)
 # }
 # 
 # write_csv(group_params, "../data/param_recovery/group_param_samples_recovery.csv")
 # write_csv(individual_params, "../data/param_recovery/individual_params_samples_recovery.csv")
-# 
-# #------------------------------------------------------------------------------#
-# # Data generation
-# #------------------------------------------------------------------------------#
+
+group_params <- read_csv("../data/param_recovery/group_param_samples_recovery.csv")
+individual_params <- read_csv("../data/param_recovery/individual_params_samples_recovery.csv")
+
+#------------------------------------------------------------------------------#
+# Data generation
+#------------------------------------------------------------------------------#
 # sim_data <- tibble()
 # for (i in 1:NUM_SIM) {
 #   tmp_sim_data <- tibble()
@@ -140,20 +139,27 @@ FONT_SIZE_3 <- 18
 #         individual_params$condition == df$condition[j] &
 #         individual_params$id == df$id[j]
 #     ]
-#     ndt <- individual_params$ndt[
-#       individual_params$sim_id == i &
-#         individual_params$condition == df$condition[j] &
-#         individual_params$id == df$id[j]
-#     ]
 #     bias <- individual_params$bias[
 #       individual_params$sim_id == i &
 #         individual_params$condition == df$condition[j] &
 #         individual_params$id == df$id[j]
 #     ]
-#     
-#     x <- sample_ddm(v = v, a = a, ndt = ndt, bias = bias)
+#     ndt <- individual_params$ndt[
+#       individual_params$sim_id == i &
+#         individual_params$condition == df$condition[j] &
+#         individual_params$id == df$id[j]
+#     ]
+#     ndt_var <- individual_params$ndt_var[
+#       individual_params$sim_id == i &
+#         individual_params$condition == df$condition[j] &
+#         individual_params$id == df$id[j]
+#     ]
+# 
+#     t0 <- ndt + runif(1, 0, 1) * ndt_var
+# 
+#     x <- sample_ddm(v = v, a = a, ndt = t0, bias = bias)
 #     names(x) <- c("resp", "rt")
-#     tmp_sim_data <- tmp_sim_data %>% 
+#     tmp_sim_data <- tmp_sim_data %>%
 #       bind_rows(x)
 #   }
 #   tmp_sim_data$id <- df$id
@@ -161,44 +167,105 @@ FONT_SIZE_3 <- 18
 #   tmp_sim_data$sim_id <- i
 #   tmp_sim_data$stim_type <- df$stim_type
 #   tmp_sim_data$factual_truth <- df$factual_truth
-#   sim_data <- sim_data %>% 
+#   sim_data <- sim_data %>%
 #     bind_rows(tmp_sim_data)
 #   print(paste("Simulation Nr.", i, "finished"))
 # }
 # 
 # write_csv(sim_data, "../data/param_recovery/sim_data_recovery.csv")
 
+sim_data <- read_csv("../data/param_recovery/sim_data_recovery.csv")
+
 #------------------------------------------------------------------------------#
 # Model fitting
 #------------------------------------------------------------------------------#
-# init_fun = function(chains=4){
-#   L = list()
-#   for (i in 1:chains) {
-#     L[[i]] = list(
-#       mu_v       = 1.0 + runif(4, -0.5, 0.5),
-#       sigma_v    = 0.4 + runif(4, -0.05, 0.05),
-#       mu_a       = 2.0 + runif(4, -0.2, 0.2),
-#       sigma_a    = 0.4 + runif(4, -0.05, 0.05),
-#       mu_bias    = 0.0 + runif(4, -0.05, 0.05),
-#       sigma_bias = 0.1 + runif(4, -0.05, 0.05),
-#       mu_ndt     = 1 + runif(4, -0.05, 0.05),
-#       sigma_ndt  = 0.1 + runif(4, -0.01, 0.01),
-#       ndt_s      = 0.05 + runif(1, -0.01, 0.01),
-#       z_v        = matrix(runif(4*NUM_SUBS, -1, 1), nrow=4),
-#       z_a        = matrix(runif(4*NUM_SUBS, -1, 1), nrow=4),
-#       z_ndt      = matrix(runif(4*NUM_SUBS, -1, 1), nrow=4),
-#       z_bias     = matrix(runif(4*NUM_SUBS, -1, 1), nrow=4),
-#       trel       = matrix(runif(4*NUM_SUBS, 0.01, 0.99), nrow=4)
-#     )
-#   }
-#   return(L)
-# }
-# 
-# m_full <- cmdstan_model(
-#   '../model/full_model.stan',
-#   cpp_options = list(stan_threads = T)
-# )
-# 
+init_fun <- function(chains = 4, n) {
+  L <- vector("list", chains)
+  for (i in 1:chains) {
+    L[[i]] <- list(
+      # --- v (drift rate) ---
+      v_intercept = rnorm(1, 0, 0.1),
+      v_betas     = rnorm(3, 0, 0.1),
+      sigma_v        = runif(1, 0.2, 0.5),
+      # --- a (boundary separation) ---
+      a_intercept = runif(1, 1.5, 2.5),
+      a_betas     = rnorm(3, 0, 0.1),
+      sigma_a        = runif(1, 0.2, 0.5),
+      # --- bias ---
+      bias_intercept = rnorm(1, 0, 0.2),
+      bias_betas     = rnorm(3, 0, 0.2),
+      sigma_bias        = runif(1, 0.2, 0.5),
+      # --- ndt ---
+      ndt_intercept = rnorm(1, -2, 0.05),
+      ndt_betas     = rnorm(3, 0, 0.05),
+      sigma_ndt        = abs(rnorm(1, 0, 0.05)),
+      # --- ndt_var ---
+      ndt_var_intercept = rnorm(1, 0, 0.05),
+      ndt_var_betas     = rnorm(3, 0, 0.05),
+      sigma_ndt_var        = abs(rnorm(1, 0, 0.05)),
+      # --- z (subject-level random effects, std_normal) ---
+      z_v        = rnorm(n, 0, 0.5),
+      z_a        = rnorm(n, 0, 0.5),
+      z_bias     = rnorm(n, 0, 0.5),
+      z_ndt      = rnorm(n, 0, 0.5),
+      z_ndt_var  = rnorm(n, 0, 0.5),
+      # --- trial-level t0 variability (if modeled) ---
+      s    = runif(T, 0, 0.03),
+      trel = matrix(runif(4*n, 0.01, 0.8), nrow=4)
+    )
+  }
+  return(L)
+}
+
+truth_ddm <- cmdstan_model(
+  '../model/truth_ddm.stan',
+  cpp_options = list(stan_threads = T)
+)
+
+sub_data <- sim_data %>% 
+  filter(sim_id == 1)
+
+sub_data$factual_truth <- ifelse(sub_data$factual_truth == 0, -1, 1)
+sub_data$stim_type <- ifelse(sub_data$stim_type == 0, -1, 1)
+interaction_term <- sub_data$factual_truth * sub_data$stim_type
+
+N <- length(unique(sub_data$id))
+`T` <- nrow(sub_data)
+
+# Prepare Stan data list
+stan_data <- list(
+  `T`           = `T`,
+  N             = N,
+  subject_id    = sub_data$id,
+  resp          = sub_data$resp,
+  truth         = sub_data$factual_truth,
+  repetition    = sub_data$stim_type,
+  interaction   = interaction_term,
+  condition     = sub_data$condition,
+  rt            = sub_data$rt,
+  minRT         = tapply(sub_data$rt, list(sub_data$condition, sub_data$id), min)
+)
+
+fit_sub_data <- truth_ddm$sample(
+  data = stan_data,
+  init = init_fun(n=N),
+  max_treedepth = 8,
+  adapt_delta = 0.85,
+  refresh = 25,
+  iter_sampling = 1000,
+  iter_warmup = 1000,
+  chains = 4,
+  parallel_chains = 4,
+  threads_per_chain = 2,
+  save_warmup = TRUE
+)
+
+
+
+
+
+
+
 # for (i in 1:NUM_SIM) {
 #   fitting_data <- sim_data[sim_data$sim_id == i, ]
 #   stan_data = list(
