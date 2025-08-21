@@ -251,17 +251,16 @@ fit_sub_data <- truth_ddm$sample(
   init = init_fun(n=N),
   max_treedepth = 8,
   adapt_delta = 0.85,
-  refresh = 25,
+  refresh = 50,
   iter_sampling = 1000,
   iter_warmup = 1000,
   chains = 4,
   parallel_chains = 4,
   threads_per_chain = 2,
-  save_warmup = TRUE
 )
 
-
-
+fit_sub_data
+print(fit_sub_data$summary(variables = PARAM_NAMES), n=100)
 
 
 

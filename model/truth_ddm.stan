@@ -159,6 +159,6 @@ generated quantities {
     transf_mu_a[i]       = log1p_exp(mu_a[i]);
     transf_mu_bias[i]    = inv_logit(mu_bias[i]);
     transf_mu_ndt[i]     = mu_ndt[i];
-    transf_mu_ndt_var[i] = mu_ndt_var[i];
+    transf_mu_ndt_var[i] = log1p_exp(mu_ndt_var[i]);
   }
 }
