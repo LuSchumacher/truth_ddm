@@ -141,9 +141,8 @@ pred_data_session_2 <- read_csv("../fits/pred_data_session_2.csv")
 pred_data_exp_2 <- read_csv("../fits/pred_data_exp_2.csv")
 
 ################################################################################
-# EMPIRICAL SUMMARIES
+# EMPIRICAL RT QUANTILES
 ################################################################################
-# RT quantiles
 quantiles <- c(0.1, 0.3, 0.5, 0.7, 0.9)
 
 emp_rt_summaries_s1 <- df_session_1 %>%
@@ -194,10 +193,6 @@ emp_rt_summaries_exp2 <- df_exp_2 %>%
   mutate(
     quantile = as.numeric(sub("%", "", quantile)) / 100
   )
-
-# Response Probability
-
-
 
 ################################################################################
 # RT QUANTILES PLOT: EXPERIMENT 1
@@ -547,7 +542,6 @@ group_emp_resp_prob_exp2 <- df_exp_2 %>%
     type = 'Observed'
   )
 
-# combine summaries
 summary_df_exp2 <- bind_rows(pred_resp_prob_exp2, group_emp_resp_prob_exp2)
 
 FONT_SCALER <- 6

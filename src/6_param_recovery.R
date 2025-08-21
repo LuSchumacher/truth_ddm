@@ -23,16 +23,15 @@ PARAM_NAMES <- c(
   "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
   "transf_mu_ndt_var[1]", "transf_mu_ndt_var[2]", "transf_mu_ndt_var[3]", "transf_mu_ndt_var[4]"
-
 )
 
 FONT_SIZE_1 <- 22
 FONT_SIZE_2 <- 20
 FONT_SIZE_3 <- 18
 
-#------------------------------------------------------------------------------#
-# Parameter sampling
-#------------------------------------------------------------------------------#
+################################################################################
+# PARAMETER SAMPLING
+################################################################################
 # mu_v <- rnorm(4 * NUM_SIM, 0, 0.5)
 # mu_a <- rnorm(4 * NUM_SIM, 2, 0.5)
 # mu_bias <- rnorm(4 * NUM_SIM, 0, 0.2)
@@ -122,9 +121,9 @@ FONT_SIZE_3 <- 18
 group_params <- read_csv("../data/param_recovery/group_param_samples_recovery.csv")
 individual_params <- read_csv("../data/param_recovery/individual_params_samples_recovery.csv")
 
-#------------------------------------------------------------------------------#
-# Data generation
-#------------------------------------------------------------------------------#
+################################################################################
+# DATA SIMULATION
+################################################################################
 # sim_data <- tibble()
 # for (i in 1:NUM_SIM) {
 #   tmp_sim_data <- tibble()
@@ -176,9 +175,9 @@ individual_params <- read_csv("../data/param_recovery/individual_params_samples_
 
 sim_data <- read_csv("../data/param_recovery/sim_data_recovery.csv")
 
-#------------------------------------------------------------------------------#
-# Model fitting
-#------------------------------------------------------------------------------#
+################################################################################
+# MODEL FITTING
+################################################################################
 init_fun <- function(chains = 4, n) {
   L <- vector("list", chains)
   for (i in 1:chains) {
@@ -222,184 +221,164 @@ truth_ddm <- cmdstan_model(
   cpp_options = list(stan_threads = T)
 )
 
-sub_data <- sim_data %>% 
-  filter(sim_id == 1)
+# fit_sub_data <- truth_ddm$sample(
+#   data = stan_data,
+#   init = init_fun(n=N),
+#   max_treedepth = 8,
+#   adapt_delta = 0.85,
+#   refresh = 50,
+#   iter_sampling = 1000,
+#   iter_warmup = 1000,
+#   chains = 4,
+#   parallel_chains = 4,
+#   threads_per_chain = 2
+# )
 
-sub_data$factual_truth <- ifelse(sub_data$factual_truth == 0, -1, 1)
-sub_data$stim_type <- ifelse(sub_data$stim_type == 0, -1, 1)
-interaction_term <- sub_data$factual_truth * sub_data$stim_type
+for (i in 1:NUM_SIM) {
+  fitting_data <- sim_data %>% 
+    filter(sim_id == i)
+  fitting_data$factual_truth <- ifelse(fitting_data$factual_truth == 0, -1, 1)
+  fitting_data$stim_type <- ifelse(fitting_data$stim_type == 0, -1, 1)
+  interaction_term <- fitting_data$factual_truth * fitting_data$stim_type
+  
+  N <- length(unique(fitting_data$id))
+  `T` <- nrow(fitting_data)
+  
+  # Prepare Stan data list
+  stan_data <- list(
+    `T`           = `T`,
+    N             = N,
+    subject_id    = fitting_data$id,
+    resp          = fitting_data$resp,
+    truth         = fitting_data$factual_truth,
+    repetition    = fitting_data$stim_type,
+    interaction   = interaction_term,
+    condition     = fitting_data$condition,
+    rt            = fitting_data$rt,
+    minRT         = tapply(
+      fitting_data$rt, list(fitting_data$condition, fitting_data$id), min
+    )
+  )
 
-N <- length(unique(sub_data$id))
-`T` <- nrow(sub_data)
+  fit_sim_data <- truth_ddm$sample(
+    data = stan_data,
+    init = init_fun(n=N),
+    max_treedepth = 8,
+    adapt_delta = 0.85,
+    refresh = 100,
+    iter_sampling = 1000,
+    iter_warmup = 1000,
+    chains = 4,
+    parallel_chains = 4,
+    threads_per_chain = 2
+  )
 
-# Prepare Stan data list
-stan_data <- list(
-  `T`           = `T`,
-  N             = N,
-  subject_id    = sub_data$id,
-  resp          = sub_data$resp,
-  truth         = sub_data$factual_truth,
-  repetition    = sub_data$stim_type,
-  interaction   = interaction_term,
-  condition     = sub_data$condition,
-  rt            = sub_data$rt,
-  minRT         = tapply(sub_data$rt, list(sub_data$condition, sub_data$id), min)
-)
+  fit_sim_data$save_object(paste0("../param_recovery/fits/fit_sim_data_", i, ".rds"))
 
-fit_sub_data <- truth_ddm$sample(
-  data = stan_data,
-  init = init_fun(n=N),
-  max_treedepth = 8,
-  adapt_delta = 0.85,
-  refresh = 50,
-  iter_sampling = 1000,
-  iter_warmup = 1000,
-  chains = 4,
-  parallel_chains = 4,
-  threads_per_chain = 2,
-)
+  group_param_estimates <- fit_sim_data$summary(variables = PARAM_NAMES)
+  group_param_estimates <- group_param_estimates %>%
+    select(name = 1, median = 3) %>%
+    mutate(
+      parameter = str_extract(name, "(?<=transf_mu_)[a-z_]+"),
+      condition = as.integer(str_extract(name, "\\d+")),
+      sim_id = i
+    ) %>%
+    select(sim_id, condition, parameter, median) %>%
+    arrange(sim_id, parameter, condition)
 
-fit_sub_data
-print(fit_sub_data$summary(variables = PARAM_NAMES), n=100)
+  write_csv(group_param_estimates, paste0("../data/param_recovery/group_param_estimates_recovery_", i, ".csv"))
 
-
-
-
-# for (i in 1:NUM_SIM) {
-#   fitting_data <- sim_data[sim_data$sim_id == i, ]
-#   stan_data = list(
-#     `T`           = nrow(fitting_data),
-#     N             = NUM_SUBS,
-#     subject_id    = fitting_data$id,
-#     resp          = fitting_data$resp,
-#     factual_truth = fitting_data$factual_truth,
-#     condition     = fitting_data$condition,
-#     rt            = fitting_data$rt,
-#     minRT         = tapply(
-#       fitting_data$rt, list(fitting_data$condition, fitting_data$id), min
-#     )
-#   )
-#   
-#   fit_sim_data <- m_full$sample(
-#     data = stan_data,
-#     init = init_fun(),
-#     max_treedepth = 10,
-#     adapt_delta = 0.9,
-#     refresh = 25,
-#     iter_sampling = 1000,
-#     iter_warmup = 1000,
-#     chains = 4,
-#     parallel_chains = 4,
-#     threads_per_chain = 2,
-#     save_warmup = FALSE
-#   )
-#   
-#   fit_sim_data$save_object(paste0("../fits/fit_sim_data_", i))
-#   
-#   group_param_estimates <- fit_sim_data$summary(variables = PARAM_NAMES)
-#   group_param_estimates <- group_param_estimates %>%
-#     select(name = 1, median = 3) %>%
-#     mutate(
-#       parameter = str_extract(name, "(?<=transf_mu_)[a-z]+"),
-#       condition = as.integer(str_extract(name, "\\d+")),
-#       sim_id = i
-#     ) %>% 
-#     select(sim_id, condition, parameter, median) %>% 
-#     arrange(sim_id, parameter, condition)
-#   
-#   write_csv(group_param_estimates, paste0("../data/param_recovery/group_param_estimates_recovery_", i, ".csv"))
-#   
-#   print(paste("Fitting Nr.", i, "finished"))
-# }
+  print(paste("Fitting Nr.", i, "finished"))
+}
 
 
 #------------------------------------------------------------------------------#
 # Evaluation
 #------------------------------------------------------------------------------#
-true_params <- read_csv("../data/param_recovery/group_param_samples_recovery.csv")
-true_params <- true_params %>% 
-  select(
-    sim_id, condition, mu_v, 
-    tranf_a, tranf_ndt, tranf_bias
-  ) %>% 
-  pivot_longer(
-    cols = -c(sim_id, condition),
-    names_to = "parameter",
-    values_to = "value_true"
-  ) %>% 
-  mutate(parameter = case_when(
-    parameter == "mu_v" ~ "v",
-    parameter == "tranf_a" ~ "a",
-    parameter == "tranf_ndt" ~ "ndt",
-    parameter == "tranf_bias" ~ "bias",
-  )) %>% 
-  arrange(sim_id, parameter, condition)
-
-true_params$type <- "true"
-
-path <- "../data/param_recovery/"
-files <- list.files(path, pattern = "group_param_estimates_recovery")
-
-pred_params <- read_csv(paste0(path, files)) %>% 
-  arrange(sim_id, parameter, condition)
-  
-true_params$value_pred <- pred_params$median
-true_params <- true_params %>% 
-  mutate(
-    parameter = factor(parameter, levels = c("v", "a", "ndt", "bias"))
-  )
-
-r2_scores <- true_params %>%
-  group_by(parameter) %>%
-  summarise(
-    r2 = cor(value_true, value_pred)^2
-  )
-true_params_with_r2 <- true_params %>%
-  left_join(r2_scores, by = "parameter")
-plots <- true_params_with_r2 %>%
-  group_split(parameter) %>%
-  imap(~{
-    df <- .x
-    lims <- range(c(df$value_true, df$value_pred))
-    r2_label <- sprintf("R² = %.2f", unique(df$r2))
-    
-    p <- ggplot(df, aes(x = value_true, y = value_pred)) +
-      geom_point(alpha = 0.6) +
-      geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
-      annotate("text", x = lims[1], y = lims[2], hjust = 0, vjust = 1,
-               label = r2_label, size = 6, fontface = "italic", color = "black") +
-      coord_fixed() +
-      xlim(lims) + ylim(lims) +
-      ggtitle(unique(df$parameter)) +
-      labs(
-        x = "True",
-        y = if (.y == 1) "Estimated" else NULL
-      ) +
-      ggthemes::theme_tufte() + 
-      theme(
-        axis.line = element_line(size = .5, color = "#969696"),
-        axis.ticks = element_line(color = "#969696"),
-        axis.text.x = element_text(size = FONT_SIZE_3),
-        axis.text.y = element_text(size = FONT_SIZE_3),
-        strip.text.x = element_text(size = FONT_SIZE_2),
-        strip.text.y = element_text(size = FONT_SIZE_2, angle = 0),
-        text = element_text(size = FONT_SIZE_2),
-        plot.title = element_text(size = FONT_SIZE_1,
-                                  hjust = 0.5,
-                                  face = 'bold'),
-        panel.grid.major = element_line(color = alpha("gray70", 0.3)),
-        panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
-        panel.background = element_blank(),
-        legend.spacing.y = unit(0.25, 'cm'),
-        panel.spacing = unit(1., "lines"),
-        axis.title.y = if (.y == 1) element_text() else element_blank()
-      )
-    
-    p
-  })
-
-combined_plot <- wrap_plots(plots, ncol = 4)
-ggsave("../plots/06_parameter_recovery_plot.jpeg", 
-       plot = combined_plot, 
-       width = 12, height = 8, dpi = 300, 
-       device = "jpeg")
+# true_params <- read_csv("../data/param_recovery/group_param_samples_recovery.csv")
+# true_params <- true_params %>% 
+#   select(
+#     sim_id, condition, mu_v, 
+#     tranf_a, tranf_ndt, tranf_bias
+#   ) %>% 
+#   pivot_longer(
+#     cols = -c(sim_id, condition),
+#     names_to = "parameter",
+#     values_to = "value_true"
+#   ) %>% 
+#   mutate(parameter = case_when(
+#     parameter == "mu_v" ~ "v",
+#     parameter == "tranf_a" ~ "a",
+#     parameter == "tranf_ndt" ~ "ndt",
+#     parameter == "tranf_bias" ~ "bias",
+#   )) %>% 
+#   arrange(sim_id, parameter, condition)
+# 
+# true_params$type <- "true"
+# 
+# path <- "../data/param_recovery/"
+# files <- list.files(path, pattern = "group_param_estimates_recovery")
+# 
+# pred_params <- read_csv(paste0(path, files)) %>% 
+#   arrange(sim_id, parameter, condition)
+#   
+# true_params$value_pred <- pred_params$median
+# true_params <- true_params %>% 
+#   mutate(
+#     parameter = factor(parameter, levels = c("v", "a", "ndt", "bias"))
+#   )
+# 
+# r2_scores <- true_params %>%
+#   group_by(parameter) %>%
+#   summarise(
+#     r2 = cor(value_true, value_pred)^2
+#   )
+# true_params_with_r2 <- true_params %>%
+#   left_join(r2_scores, by = "parameter")
+# plots <- true_params_with_r2 %>%
+#   group_split(parameter) %>%
+#   imap(~{
+#     df <- .x
+#     lims <- range(c(df$value_true, df$value_pred))
+#     r2_label <- sprintf("R² = %.2f", unique(df$r2))
+#     
+#     p <- ggplot(df, aes(x = value_true, y = value_pred)) +
+#       geom_point(alpha = 0.6) +
+#       geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
+#       annotate("text", x = lims[1], y = lims[2], hjust = 0, vjust = 1,
+#                label = r2_label, size = 6, fontface = "italic", color = "black") +
+#       coord_fixed() +
+#       xlim(lims) + ylim(lims) +
+#       ggtitle(unique(df$parameter)) +
+#       labs(
+#         x = "True",
+#         y = if (.y == 1) "Estimated" else NULL
+#       ) +
+#       ggthemes::theme_tufte() + 
+#       theme(
+#         axis.line = element_line(size = .5, color = "#969696"),
+#         axis.ticks = element_line(color = "#969696"),
+#         axis.text.x = element_text(size = FONT_SIZE_3),
+#         axis.text.y = element_text(size = FONT_SIZE_3),
+#         strip.text.x = element_text(size = FONT_SIZE_2),
+#         strip.text.y = element_text(size = FONT_SIZE_2, angle = 0),
+#         text = element_text(size = FONT_SIZE_2),
+#         plot.title = element_text(size = FONT_SIZE_1,
+#                                   hjust = 0.5,
+#                                   face = 'bold'),
+#         panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+#         panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+#         panel.background = element_blank(),
+#         legend.spacing.y = unit(0.25, 'cm'),
+#         panel.spacing = unit(1., "lines"),
+#         axis.title.y = if (.y == 1) element_text() else element_blank()
+#       )
+#     
+#     p
+#   })
+# 
+# combined_plot <- wrap_plots(plots, ncol = 4)
+# ggsave("../plots/06_parameter_recovery_plot.jpeg", 
+#        plot = combined_plot, 
+#        width = 12, height = 8, dpi = 300, 
+#        device = "jpeg")
