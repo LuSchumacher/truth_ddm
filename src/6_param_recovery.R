@@ -292,33 +292,36 @@ for (i in 1:NUM_SIM) {
 }
 
 
-#------------------------------------------------------------------------------#
-# Evaluation
-#------------------------------------------------------------------------------#
-# true_params <- read_csv("../data/param_recovery/group_param_samples_recovery.csv")
-# true_params <- true_params %>% 
-#   select(
-#     sim_id, condition, mu_v, 
-#     tranf_a, tranf_ndt, tranf_bias
-#   ) %>% 
-#   pivot_longer(
-#     cols = -c(sim_id, condition),
-#     names_to = "parameter",
-#     values_to = "value_true"
-#   ) %>% 
-#   mutate(parameter = case_when(
-#     parameter == "mu_v" ~ "v",
-#     parameter == "tranf_a" ~ "a",
-#     parameter == "tranf_ndt" ~ "ndt",
-#     parameter == "tranf_bias" ~ "bias",
-#   )) %>% 
-#   arrange(sim_id, parameter, condition)
-# 
-# true_params$type <- "true"
-# 
-# path <- "../data/param_recovery/"
-# files <- list.files(path, pattern = "group_param_estimates_recovery")
-# 
+################################################################################
+# EVALUATION
+################################################################################
+true_params <- group_params %>%
+  select(
+    sim_id, condition, mu_v,
+    tranf_mu_a, tranf_mu_bias, tranf_mu_ndt, tranf_mu_ndt_var
+  ) %>%
+  pivot_longer(
+    cols = -c(sim_id, condition),
+    names_to = "parameter",
+    values_to = "value_true"
+  ) %>%
+  mutate(parameter = case_when(
+    parameter == "mu_v" ~ "v",
+    parameter == "tranf_mu_a" ~ "a",
+    parameter == "tranf_mu_ndt" ~ "ndt",
+    parameter == "tranf_mu_ndt_var" ~ "ndt_var",
+    parameter == "tranf_mu_bias" ~ "bias",
+  )) %>%
+  arrange(sim_id, parameter, condition)
+
+true_params$type <- "true"
+
+path <- "../data/param_recovery/"
+files <- list.files(path, pattern = "group_param_estimates_recovery")
+
+tmp_params <- read_rds("../fits/param_recovery/fit_sim_data_1.rds")
+
+
 # pred_params <- read_csv(paste0(path, files)) %>% 
 #   arrange(sim_id, parameter, condition)
 #   
