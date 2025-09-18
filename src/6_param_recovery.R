@@ -18,16 +18,24 @@ NUM_SIM <- 50
 NUM_SUBS <- length(unique(df$id))
 
 PARAM_NAMES <- c(
-  "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
-  "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
-  "transf_mu_bias[1]", "transf_mu_bias[2]", "transf_mu_bias[3]", "transf_mu_bias[4]",
-  "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
-  "transf_mu_ndt_var[1]", "transf_mu_ndt_var[2]", "transf_mu_ndt_var[3]", "transf_mu_ndt_var[4]"
+  "transf_mu_v[1]", "transf_mu_v[2]",
+  "transf_mu_v[3]", "transf_mu_v[4]",
+  "transf_mu_a[1]", "transf_mu_a[2]",
+  "transf_mu_a[3]", "transf_mu_a[4]",
+  "transf_mu_bias[1]", "transf_mu_bias[2]",
+  "transf_mu_bias[3]", "transf_mu_bias[4]",
+  "transf_mu_ndt[1]", "transf_mu_ndt[2]",
+  "transf_mu_ndt[3]", "transf_mu_ndt[4]",
+  "transf_mu_ndt_var[1]", "transf_mu_ndt_var[2]",
+  "transf_mu_ndt_var[3]", "transf_mu_ndt_var[4]"
 )
 
 PARAM_LABELS <- c(
-  "v" = "italic(v)", "a" = "italic(a)", "bias" = "Bias",
-  "ndt" = "NDT", "ndt_var" = "NDT[var]"
+  "v"       = "italic(v)",
+  "a"       = "italic(a)",
+  "bias"    = "beta",
+  "ndt"     = "tau",
+  "ndt_var" = "tau[var]"
 )
 
 FONT_SIZE_1 <- 22

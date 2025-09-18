@@ -11,36 +11,12 @@ options(scipen = 999)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-fit_session_1 <- readRDS("../fits/fit_session_1.rds")
-fit_session_2 <- readRDS("../fits/fit_session_2.rds")
-fit_exp_2 <- readRDS("../fits/fit_exp_2.rds")
-
-draws_session_1 <- as_draws_matrix(fit_session_1)
-draws_session_2 <- as_draws_matrix(fit_session_2)
-draws_exp_2 <- as_draws_matrix(fit_exp_2)
-
-PARAM_NAMES <- c(
-  "v_betas[1]", "v_betas[2]", "v_betas[3]",
-  "a_betas[1]", "a_betas[2]", "a_betas[3]",
-  "bias_betas[1]", "bias_betas[2]", "bias_betas[3]",
-  "ndt_betas[1]", "ndt_betas[2]", "ndt_betas[3]",
-  "ndt_var_betas[1]", "ndt_var_betas[2]", "ndt_var_betas[3]"
-)
-
-PARAM_LABELS <- c(
-  "v" = "italic(v)", "a" = "italic(a)", "bias" = "Bias",
-  "ndt" = "NDT", "ndt_var" = "NDT[var]"
-)
-
-print(fit_session_1$summary(variables = PARAM_NAMES), n=100)
-print(fit_session_2$summary(variables = PARAM_NAMES), n=100)
-print(fit_exp_2$summary(variables = PARAM_NAMES), n=100)
-
-FONT_SIZE_1 <- 22
-FONT_SIZE_2 <- 20
-FONT_SIZE_3 <- 18
-COLOR_PALETTE <- c('#27374D', '#B70404')
-
+summarize_param <- function(draws, param) {
+  x <- draws[, param]
+  med <- median(x)
+  ci <- quantile(x, c(0.025, 0.975))
+  sprintf("%.2f [%.2f, %.2f]", med, ci[1], ci[2])
+}
 
 calc_BF <- function(posterior_samples, prior_sd = 0.5) {
   post_density <- density(posterior_samples, bw = "nrd0")
@@ -80,9 +56,62 @@ summarize_param <- function(fit, param_name, cond_indices) {
   })
 }
 
+fit_session_1 <- readRDS("../fits/fit_session_1.rds")
+fit_session_2 <- readRDS("../fits/fit_session_2.rds")
+fit_exp_2 <- readRDS("../fits/fit_exp_2.rds")
+
+draws_session_1 <- as_draws_matrix(fit_session_1)
+draws_session_2 <- as_draws_matrix(fit_session_2)
+draws_exp_2 <- as_draws_matrix(fit_exp_2)
+
+PARAM_NAMES <- c(
+  "v_betas[1]", "v_betas[2]", "v_betas[3]",
+  "a_betas[1]", "a_betas[2]", "a_betas[3]",
+  "bias_betas[1]", "bias_betas[2]", "bias_betas[3]",
+  "ndt_betas[1]", "ndt_betas[2]", "ndt_betas[3]",
+  "ndt_var_betas[1]", "ndt_var_betas[2]", "ndt_var_betas[3]"
+)
+
+PARAM_LABELS <- c(
+  "v"       = "italic(v)",
+  "a"       = "italic(a)",
+  "bias"    = "beta",
+  "ndt"     = "tau",
+  "ndt_var" = "tau[var]"
+)
+
+FONT_SIZE_1 <- 22
+FONT_SIZE_2 <- 20
+FONT_SIZE_3 <- 18
+COLOR_PALETTE <- c('#27374D', '#B70404')
+
 ################################################################################
 # POSTERIOR SUMMARIES
 ################################################################################
+summary_session_1 <- sapply(PARAM_NAMES, summarize_param, draws = draws_session_1)
+summary_session_2 <- sapply(PARAM_NAMES, summarize_param, draws = draws_session_2)
+summary_exp_2     <- sapply(PARAM_NAMES, summarize_param, draws = draws_exp_2)
+
+posterior_table <- tibble(
+  parameter = PARAM_NAMES,
+  Session_1 = summary_session_1,
+  Session_2 = summary_session_2,
+  Exp_2 = summary_exp_2
+) %>% 
+  mutate(
+    effect = str_extract(parameter, "(?<=\\[)\\d+(?=\\])"),
+    parameter = str_remove(parameter, "_[^_]+$"),
+    effect = case_when(
+      effect == "1" ~ "Repetition",
+      effect == "2" ~ "Factual truth",
+      effect == "3" ~ "Interaction",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  relocate(effect, .after = parameter)
+
+write_csv(posterior_table, "../tables/effects_post_summaries_table.csv")
+
 param_names <- c(
   "transf_mu_v[1]", "transf_mu_v[2]", "transf_mu_v[3]", "transf_mu_v[4]",
   "transf_mu_a[1]", "transf_mu_a[2]", "transf_mu_a[3]", "transf_mu_a[4]",
@@ -90,13 +119,6 @@ param_names <- c(
   "transf_mu_ndt[1]", "transf_mu_ndt[2]", "transf_mu_ndt[3]", "transf_mu_ndt[4]",
   "transf_mu_ndt_var[1]", "transf_mu_ndt_var[2]", "transf_mu_ndt_var[3]", "transf_mu_ndt_var[4]"
 )
-
-summarize_param <- function(draws, param) {
-  x <- draws[, param]
-  med <- median(x)
-  ci <- quantile(x, c(0.025, 0.975))
-  sprintf("%.2f [%.2f, %.2f]", med, ci[1], ci[2])
-}
 
 summary_session_1 <- sapply(param_names, summarize_param, draws = draws_session_1)
 summary_session_2 <- sapply(param_names, summarize_param, draws = draws_session_2)
