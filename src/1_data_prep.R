@@ -99,6 +99,8 @@ df %<>%
       factual_truth == 0 & stim_type == 0 ~ 3, # false statement, new
       factual_truth == 0 & stim_type == 1 ~ 4  # false statement, repeated
     )
-  )
+  ) %>% 
+  mutate(rt_total = rt + rt_question) %>% 
+  relocate(condition, .after = rt_total)
 
-write_csv(df, 'data_exp_2.csv')
+write_csv(df, '../data/data_exp_2.csv')

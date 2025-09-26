@@ -184,3 +184,46 @@ fit_exp_2 <- truth_ddm$sample(
 print(fit_exp_2$summary(variables = PARAM_NAMES), n=100)
 mcmc_trace(fit_exp_2$draws(), pars=PARAM_NAMES, facet_args = list(ncol = 4))
 fit_exp_2$save_object("../fits/fit_exp_2.rds")
+
+################################################################################
+# EXPERIMENT 2: COMBINED RT (EXPLORATIVE)
+################################################################################
+df_exp_2 <- read.csv('../data/data_exp_2.csv')
+df_exp_2$factual_truth <- ifelse(df_exp_2$factual_truth == 0, -1, 1)
+df_exp_2$stim_type <- ifelse(df_exp_2$stim_type == 0, -1, 1)
+interaction_term <- df_exp_2$factual_truth * df_exp_2$stim_type
+
+N <- length(unique(df_exp_2$id))
+`T` <- nrow(df_exp_2)
+
+# Prepare Stan data list
+stan_data <- list(
+  `T`           = `T`,
+  N             = N,
+  subject_id    = df_exp_2$id,
+  resp          = df_exp_2$resp,
+  truth         = df_exp_2$factual_truth,
+  repetition    = df_exp_2$stim_type,
+  interaction   = interaction_term,
+  condition     = df_exp_2$condition,
+  rt            = df_exp_2$rt_total,
+  minRT         = tapply(df_exp_2$rt, list(df_exp_2$condition, df_exp_2$id), min)
+)
+
+fit_exp_2_rt_total <- truth_ddm$sample(
+  data = stan_data,
+  init = init_fun(n=N),
+  max_treedepth = 12,
+  adapt_delta = 0.95,
+  refresh = 25,
+  iter_sampling = 3000,
+  iter_warmup = 3000,
+  chains = 4,
+  parallel_chains = 4,
+  threads_per_chain = 2,
+  save_warmup = TRUE
+)
+
+print(fit_exp_2_rt_total$summary(variables = PARAM_NAMES), n=100)
+mcmc_trace(fit_exp_2_rt_total$draws(), pars=PARAM_NAMES, facet_args = list(ncol = 4))
+fit_exp_2_rt_total$save_object("../fits/fit_exp_2_rt_total.rds")
