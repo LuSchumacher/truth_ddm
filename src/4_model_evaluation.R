@@ -18,6 +18,15 @@ summarize_param <- function(draws, param) {
   sprintf("%.2f [%.2f, %.2f]", med, ci[1], ci[2])
 }
 
+summarize_params <- function(draws_matrix, param_names) {
+  draws_sub <- draws_matrix[, param_names, drop = FALSE]
+  summary_vals <- apply(draws_sub, 2, function(x) {
+    med <- median(x)
+    ci <- quantile(x, probs = c(0.025, 0.975))
+    sprintf("%.2f [%.2f, %.2f]", med, ci[1], ci[2])
+  })
+}
+
 calc_BF <- function(posterior_samples, prior_sd = 0.5) {
   post_density <- density(posterior_samples, bw = "nrd0")
   posterior_at_zero <- approx(post_density$x, post_density$y, xout = 0)$y
@@ -47,22 +56,24 @@ extract_posteriors <- function(fit, param_names, session_label) {
   bind_rows(df_list)
 }
 
-summarize_param <- function(fit, param_name, cond_indices) {
-  draws <- as.matrix(fit)[, param_name]
-  sapply(cond_indices, function(idx) {
-    median_val <- round(median(draws[, idx]), 2)
-    ci <- round(quantile(draws[, idx], probs = c(0.025, 0.975)), 2)
-    sprintf("%0.2f [%0.2f, %0.2f]", median_val, ci[1], ci[2])
-  })
-}
+# summarize_param <- function(fit, param_name, cond_indices) {
+#   draws <- as.matrix(fit)[, param_name]
+#   sapply(cond_indices, function(idx) {
+#     median_val <- round(median(draws[, idx]), 2)
+#     ci <- round(quantile(draws[, idx], probs = c(0.025, 0.975)), 2)
+#     sprintf("%0.2f [%0.2f, %0.2f]", median_val, ci[1], ci[2])
+#   })
+# }
 
 fit_session_1 <- readRDS("../fits/fit_session_1.rds")
 fit_session_2 <- readRDS("../fits/fit_session_2.rds")
 fit_exp_2 <- readRDS("../fits/fit_exp_2.rds")
+fit_exp_2_rt_total <- readRDS("../fits/fit_exp_2_rt_total.rds")
 
 draws_session_1 <- as_draws_matrix(fit_session_1)
 draws_session_2 <- as_draws_matrix(fit_session_2)
 draws_exp_2 <- as_draws_matrix(fit_exp_2)
+draws_exp_2_rt_total <- as_draws_matrix(fit_exp_2_rt_total)
 
 PARAM_NAMES <- c(
   "v_betas[1]", "v_betas[2]", "v_betas[3]",
@@ -88,19 +99,21 @@ COLOR_PALETTE <- c('#27374D', '#B70404')
 ################################################################################
 # POSTERIOR SUMMARIES
 ################################################################################
-summary_session_1 <- sapply(PARAM_NAMES, summarize_param, draws = draws_session_1)
-summary_session_2 <- sapply(PARAM_NAMES, summarize_param, draws = draws_session_2)
-summary_exp_2     <- sapply(PARAM_NAMES, summarize_param, draws = draws_exp_2)
+summary_session_1 <- summarize_params(draws_session_1, PARAM_NAMES)
+summary_session_2 <- summarize_params(draws_session_2, PARAM_NAMES)
+summary_exp_2 <- summarize_params(draws_exp_2, PARAM_NAMES)
+summary_exp_2_rt_total <- summarize_params(draws_exp_2_rt_total, PARAM_NAMES)
 
 posterior_table <- tibble(
   parameter = PARAM_NAMES,
   Session_1 = summary_session_1,
   Session_2 = summary_session_2,
-  Exp_2 = summary_exp_2
+  Exp_2 = summary_exp_2,
+  Exp_2_rt_total = summary_exp_2_rt_total
 ) %>% 
   mutate(
     effect = str_extract(parameter, "(?<=\\[)\\d+(?=\\])"),
-    parameter = str_remove(parameter, "_[^_]+$"),
+    parameter = str_remove(parameter, "\\[\\d+\\]"),
     effect = case_when(
       effect == "1" ~ "Repetition",
       effect == "2" ~ "Factual truth",
@@ -120,15 +133,17 @@ param_names <- c(
   "transf_mu_ndt_var[1]", "transf_mu_ndt_var[2]", "transf_mu_ndt_var[3]", "transf_mu_ndt_var[4]"
 )
 
-summary_session_1 <- sapply(param_names, summarize_param, draws = draws_session_1)
-summary_session_2 <- sapply(param_names, summarize_param, draws = draws_session_2)
-summary_exp_2     <- sapply(param_names, summarize_param, draws = draws_exp_2)
+summary_session_1 <- summarize_params(draws_session_1, param_names)
+summary_session_2 <- summarize_params(draws_session_2, param_names)
+summary_exp_2 <- summarize_params(draws_exp_2, param_names)
+summary_exp_2_rt_total <- summarize_params(draws_exp_2_rt_total, param_names)
 
 posterior_table <- tibble(
   Parameter = param_names,
   Session_1 = summary_session_1,
   Session_2 = summary_session_2,
-  Exp_2 = summary_exp_2
+  Exp_2 = summary_exp_2,
+  Exp_2_rt_total = summary_exp_2_rt_total
 ) %>% 
   mutate(
     Condition_index = str_extract(Parameter, "(?<=\\[)\\d+(?=\\])"),
@@ -145,22 +160,24 @@ condition_map <- tibble(
 
 posterior_table <- posterior_table %>%
   left_join(condition_map, by = "Condition_index") %>%
-  select(Parameter, Factual_Truth, Repetition, Session_1, Session_2, Exp_2)
+  select(Parameter, Factual_Truth, Repetition, Session_1, Session_2, Exp_2, Exp_2_rt_total)
 
 write_csv(posterior_table, "../tables/post_summaries_table.csv")
 
 ################################################################################
 # BAYES FACTORS
 ################################################################################
-BF_session_1 <- compute_BFs(fit_session_1, PARAM_NAMES)
-BF_session_2 <- compute_BFs(fit_session_2, PARAM_NAMES)
-BF_exp_2     <- compute_BFs(fit_exp_2, PARAM_NAMES)
+BF_session_1      <- compute_BFs(fit_session_1, PARAM_NAMES)
+BF_session_2      <- compute_BFs(fit_session_2, PARAM_NAMES)
+BF_exp_2          <- compute_BFs(fit_exp_2, PARAM_NAMES)
+BF_exp_2_rt_total <- compute_BFs(fit_exp_2_rt_total, PARAM_NAMES)
 
 BF_table <- tibble(
   Parameter = PARAM_NAMES,
   BF_session_1 = BF_session_1,
   BF_session_2 = BF_session_2,
-  BF_exp_2 = BF_exp_2
+  BF_exp_2 = BF_exp_2,
+  BF_exp_2_rt_total = BF_exp_2_rt_total
 ) %>% 
   mutate(
     param = sub("_betas\\[.*\\]", "", Parameter),
@@ -170,11 +187,12 @@ BF_table <- tibble(
       beta_index == "2" ~ "Truth",
       beta_index == "3" ~ "Interaction"
     ),
-    BF_session_1 = round(BF_session_1, 2),
-    BF_session_2 = round(BF_session_2, 2),
-    BF_exp_2     = round(BF_exp_2, 2)
+    BF_session_1      = round(BF_session_1, 2),
+    BF_session_2      = round(BF_session_2, 2),
+    BF_exp_2          = round(BF_exp_2, 2),
+    BF_exp_2_rt_total = round(BF_exp_2_rt_total, 2)
   ) %>%
-  select(param, effect, BF_session_1, BF_session_2, BF_exp_2) %>%
+  select(param, effect, BF_session_1, BF_session_2, BF_exp_2, BF_exp_2_rt_total) %>%
   arrange(factor(param, levels = c("v","a","bias","ndt","ndt_var")),
           factor(effect, levels = c("Repetition","Truth","Interaction")))
 
@@ -299,6 +317,65 @@ effects_plot_exp2 <- ggplot(post_exp2, aes(x = value_diff)) +
 ggsave(
   '../plots/02_effects_exp_2.jpeg',
   effects_plot_exp2,
+  device = 'jpeg', dpi = 300,
+  width = 12, height = 9
+)
+
+
+################################################################################
+# PLOT EFFECTS: EEXPERIMENT 2: COMBINED RT (EXPLORATIVE)
+################################################################################
+post_exp2_rt_total <- extract_posteriors(fit_exp_2_rt_total, PARAM_NAMES, "Exp 2 Combined RT")
+
+post_exp2_rt_total <- post_exp2_rt_total %>%
+  mutate(
+    param = case_when(
+      grepl("^v_betas", beta) ~ "v",
+      grepl("^a_betas", beta) ~ "a",
+      grepl("^bias_betas", beta) ~ "bias",
+      grepl("^ndt_betas", beta) ~ "ndt",
+      grepl("^ndt_var_betas", beta) ~ "ndt_var"
+    ),
+    effect = case_when(
+      grepl("\\[1\\]", beta) ~ "Repetition status",
+      grepl("\\[2\\]", beta) ~ "Factual truth",
+      grepl("\\[3\\]", beta) ~ "Interaction"
+    ),
+    param = factor(param, levels = c("v", "a", "bias", "ndt", "ndt_var")),
+    effect = factor(effect, levels = c("Repetition status", "Factual truth", "Interaction")),
+    value_diff = 2 * value
+  )
+
+effects_plot_exp2_rt_total <- ggplot(post_exp2_rt_total, aes(x = value_diff)) +
+  geom_density(fill = COLOR_PALETTE[1], color = COLOR_PALETTE[1], alpha = 0.65, linewidth = 0.6) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40") +
+  facet_grid(
+    param ~ effect,
+    scales = "free_x",
+    labeller = labeller(param = as_labeller(PARAM_LABELS, default = label_parsed))
+  ) +
+  scale_x_continuous(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Effect", y = "Density", fill = "") +
+  ggthemes::theme_tufte(base_size = FONT_SIZE_2) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 12)),
+    axis.title.y = element_text(margin = margin(r = 12)),
+    axis.line = element_line(linewidth = 0.5, color = "#969696"),
+    axis.ticks = element_line(color = "#969696"),
+    axis.text.x = element_text(size = FONT_SIZE_3, vjust = 0.5),
+    axis.text.y = element_text(size = FONT_SIZE_3),
+    strip.text.x = element_text(size = FONT_SIZE_2),
+    strip.text.y = element_text(size = FONT_SIZE_2, hjust = 0, angle = 0),
+    panel.grid.major = element_line(color = scales::alpha("gray70", 0.3)),
+    panel.grid.minor = element_line(color = scales::alpha("gray70", 0.15)),
+    panel.background = element_blank(),
+    panel.spacing = unit(1.2, "lines"),
+    legend.position = "none"
+  )
+
+ggsave(
+  '../plots/02_effects_exp_2_rt_total.jpeg',
+  effects_plot_exp2_rt_total,
   device = 'jpeg', dpi = 300,
   width = 12, height = 9
 )

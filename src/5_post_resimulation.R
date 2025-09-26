@@ -6,7 +6,7 @@ library(progress)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("0_ddm_simulator.R")
-
+  
 df_session_1 <- read_csv('../data/data_session_1.csv')
 df_session_2 <- read_csv('../data/data_session_2.csv')
 df_exp_2 <- read_csv('../data/data_exp_2.csv')
@@ -14,10 +14,12 @@ df_exp_2 <- read_csv('../data/data_exp_2.csv')
 fit_session_1 <- readRDS("../fits/fit_session_1.rds")
 fit_session_2 <- readRDS("../fits/fit_session_2.rds")
 fit_exp_2 <- readRDS("../fits/fit_exp_2.rds")
+fit_exp_2_rt_total <- readRDS("../fits/fit_exp_2_rt_total.rds")
 
 draws_session_1 <- as_draws_matrix(fit_session_1)
 draws_session_2 <- as_draws_matrix(fit_session_2)
 draws_exp_2 <- as_draws_matrix(fit_exp_2)
+fit_exp_2_rt_total <- as_draws_matrix(fit_exp_2_rt_total)
 
 FONT_SIZE_1 <- 22
 FONT_SIZE_2 <- 20
@@ -136,9 +138,15 @@ extract_all_params <- function(fit, df, idx, n_cond = 4) {
 # pred_data_exp_2 <- resimulate_session(df_exp_2, params_exp_2)
 # write_csv(pred_data_exp_2, "../fits/pred_data_exp_2.csv")
 
+# num_id_exp_2 <- length(unique(df_exp_2$id))
+# params_exp_2_rt_total <- extract_all_params(fit_exp_2_rt_total, df_exp_2, idx)
+# pred_data_exp_2_rt_total <- resimulate_session(df_exp_2, params_exp_2_rt_total)
+# write_csv(pred_data_exp_2_rt_total, "../fits/pred_data_exp_2_rt_total.csv")
+
 pred_data_session_1 <- read_csv("../fits/pred_data_session_1.csv")
 pred_data_session_2 <- read_csv("../fits/pred_data_session_2.csv")
 pred_data_exp_2 <- read_csv("../fits/pred_data_exp_2.csv")
+pred_data_exp_2_rt_total <- read_csv("../fits/pred_data_exp_2_rt_total.csv")
 
 ################################################################################
 # EMPIRICAL RT QUANTILES
