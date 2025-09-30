@@ -3,6 +3,7 @@ library(magrittr)
 library(bayesplot)
 library(tidybayes)
 library(progress)
+library(posterior)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("0_ddm_simulator.R")
@@ -202,6 +203,22 @@ emp_rt_summaries_exp2 <- df_exp_2 %>%
     quantile = as.numeric(sub("%", "", quantile)) / 100
   )
 
+emp_rt_summaries_exp2_rt_total <- df_exp_2 %>%
+  group_by(stim_type) %>%
+  summarise(
+    rt_quantiles = list(quantile(rt_total, probs = quantiles)),
+    .groups = "drop"
+  ) %>%
+  unnest_wider(rt_quantiles) %>%
+  pivot_longer(
+    cols = -stim_type,
+    names_to = "quantile",
+    values_to = "rt"
+  ) %>% 
+  mutate(
+    quantile = as.numeric(sub("%", "", quantile)) / 100
+  )
+
 ################################################################################
 # RT QUANTILES PLOT: EXPERIMENT 1
 ################################################################################
@@ -387,6 +404,87 @@ rt_quantile_plot_exp2 <- ggplot(pred_rt_summaries_exp2, aes(x = as.factor(quanti
 ggsave(
   '../plots/03_rt_quantiles_exp_2.jpeg',
   rt_quantile_plot_exp2,
+  device = 'jpeg', dpi = 300,
+  width = 6, height = 4
+)
+
+################################################################################
+# RT QUANTILES PLOT: EXPERIMENT 2: COMBINED RT (EXPLORATIVE)
+################################################################################
+pred_rt_summaries_exp2_rt_total <- pred_data_exp_2_rt_total %>%
+  group_by(resim_id, stim_type) %>%
+  summarise(
+    q10 = quantile(rt, 0.1),
+    q30 = quantile(rt, 0.3),
+    q50 = quantile(rt, 0.5),
+    q70 = quantile(rt, 0.7),
+    q90 = quantile(rt, 0.9),
+    .groups = "drop"
+  ) %>%
+  pivot_longer(cols = starts_with("q"), names_to = "quantile", values_to = "rt") %>%
+  group_by(stim_type, quantile) %>%
+  summarise(
+    mean = mean(rt),
+    q_lower = quantile(rt, 0.025),
+    q_upper = quantile(rt, 0.975),
+    .groups = "drop"
+  ) %>% 
+  mutate(
+    quantile = recode(
+      quantile, q10 = 0.1, q30 = 0.3, q50 = 0.5, q70 = 0.7, q90 = 0.9
+    )
+  )
+
+SMALLER_FONT <- 6
+rt_quantile_plot_exp2_rt_total <- ggplot(pred_rt_summaries_exp2_rt_total, aes(x = as.factor(quantile), y = mean)) +
+  geom_pointrange(
+    aes(ymin = q_lower, ymax = q_upper, color = "Re-simulated"),
+    linewidth = 1.2, fatten = 3.5, alpha = 0.9
+  ) +
+  geom_point(
+    data = emp_rt_summaries_exp2_rt_total,
+    aes(x = as.factor(quantile), y = rt, color = "Observed"),
+    size = 2, alpha = 0.7
+  ) +
+  scale_color_manual(
+    name = NULL,
+    values = c("Observed" = COLOR_PALETTE[2], "Re-simulated" = COLOR_PALETTE[1])
+  ) +
+  facet_grid(
+    stim_type ~ .,
+    labeller = labeller(
+      stim_type = c(
+        "0" = "New\nstatements",
+        "1" = "Repeated\nstatements"
+      )
+    )
+  ) +
+  labs(
+    x = "Quantile",
+    y = "Response time (s)"
+  ) +
+  ggthemes::theme_tufte(base_size = FONT_SIZE_2 - SMALLER_FONT) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 12)),
+    axis.title.y = element_text(margin = margin(r = 12)),
+    axis.line = element_line(linewidth = 0.5, color = "#969696"),
+    axis.ticks = element_line(color = "#969696"),
+    axis.text.x = element_text(size = FONT_SIZE_3 - SMALLER_FONT, vjust = 0.5),
+    axis.text.y = element_text(size = FONT_SIZE_3 - SMALLER_FONT),
+    strip.text.x = element_text(size = FONT_SIZE_2 - SMALLER_FONT, angle = 0),
+    strip.text.y = element_text(size = FONT_SIZE_2 - SMALLER_FONT, angle = 0),
+    panel.grid.major = element_line(color = scales::alpha("gray70", 0.3)),
+    panel.grid.minor = element_line(color = scales::alpha("gray70", 0.15)),
+    panel.background = element_blank(),
+    panel.spacing = unit(1.2, "lines"),
+    legend.position = "bottom",
+    legend.margin = margin(t = -5, r = 0, b = 0, l = 0),
+    legend.spacing.y = unit(0.2, "cm")
+  )
+
+ggsave(
+  '../plots/03_rt_quantile_plot_exp2_rt_total.jpeg',
+  rt_quantile_plot_exp2_rt_total,
   device = 'jpeg', dpi = 300,
   width = 6, height = 4
 )
@@ -594,6 +692,102 @@ resp_prob_plot_exp2 <- summary_df_exp2 %>%
 ggsave(
   '../plots/04_resp_prob_exp_2.jpeg',
   resp_prob_plot_exp2,
+  device = 'jpeg', dpi = 300,
+  width = 6, height = 4
+)
+
+
+################################################################################
+# RESPONSE PROBABILITY PLOT: EXPERIMENT 2: COMBINED RT (EXPLORATIVE)
+################################################################################
+# empirical (individuals)
+indiviudal_emp_resp_prob_exp2 <- df_exp_2 %>% 
+  group_by(id, stim_type) %>% 
+  summarise(resp_prob = mean(resp), .groups = "drop") %>% 
+  mutate(
+    stim_type = ifelse(stim_type == 0, "New\n statements", "Repeated\n statements"),
+    type = 'Observed'
+  )
+
+# predicted (resimulated)
+pred_resp_prob_exp2_rt_total <- pred_data_exp_2_rt_total %>% 
+  group_by(id, stim_type) %>% 
+  summarise(resp_prob = mean(resp), .groups = "drop") %>% 
+  group_by(stim_type) %>% 
+  summarise(
+    lower_ci = quantile(resp_prob, 0.025),
+    upper_ci = quantile(resp_prob, 0.975),
+    resp_prob = mean(resp_prob),
+    .groups = "drop"
+  ) %>% 
+  mutate(
+    stim_type = ifelse(stim_type == 0, "New\n statements", "Repeated\n statements"),
+    type = 'Re-simulated'
+  )
+
+# empirical (group summary)
+group_emp_resp_prob_exp2_rt_total <- df_exp_2 %>% 
+  group_by(id, stim_type) %>% 
+  summarise(resp_prob = mean(resp), .groups = "drop") %>% 
+  group_by(stim_type) %>% 
+  summarise(
+    sd_resp_prob = sd(resp_prob),
+    resp_prob = mean(resp_prob),
+    lower_ci = resp_prob - sd_resp_prob,
+    upper_ci = resp_prob + sd_resp_prob,
+    .groups = "drop"
+  ) %>% 
+  mutate(
+    stim_type = ifelse(stim_type == 0, "New\n statements", "Repeated\n statements"),
+    type = 'Observed'
+  )
+
+summary_df_exp2_rt_total <- bind_rows(
+  pred_resp_prob_exp2_rt_total, group_emp_resp_prob_exp2_rt_total
+)
+
+FONT_SCALER <- 6
+resp_prob_plot_exp2_rt_total <- summary_df_exp2_rt_total %>% 
+  ggplot(aes(x = stim_type, y = resp_prob, color = type)) +
+  geom_jitter(
+    data = indiviudal_emp_resp_prob_exp2,
+    aes(x = stim_type, y = resp_prob),
+    color = COLOR_PALETTE[1],
+    width = 0.1, size = 2, alpha = 0.4
+  ) + 
+  geom_pointinterval(
+    aes(ymin = lower_ci, ymax = upper_ci),
+    size = 10, alpha = 1.0,
+    position = position_dodge(width = 0.75)
+  ) +
+  scale_y_continuous(limits = c(0, 1), expand = c(0.0, 0.0)) +
+  scale_color_manual(values = c("Observed" = COLOR_PALETTE[1], "Re-simulated" = COLOR_PALETTE[2])) +
+  scale_fill_manual(values = c("Observed" = COLOR_PALETTE[1], "Re-simulated" = COLOR_PALETTE[2])) +
+  ggthemes::theme_tufte(base_size = FONT_SIZE_2 - FONT_SCALER) +
+  ylab("Probability for a\n\"true\" response") +
+  xlab("Repetition status") +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 12)),
+    axis.title.y = element_text(margin = margin(r = 12)),
+    axis.line = element_line(linewidth = 0.5, color = "#969696"),
+    axis.ticks = element_line(color = "#969696"),
+    axis.text.x = element_text(size = FONT_SIZE_3 - FONT_SCALER, vjust = 0.5),
+    axis.text.y = element_text(size = FONT_SIZE_3 - FONT_SCALER),
+    strip.text.x = element_text(size = FONT_SIZE_2 - FONT_SCALER),
+    strip.text.y = element_text(size = FONT_SIZE_2 - FONT_SCALER, hjust = 0, angle = 0),
+    panel.grid.major = element_line(color = scales::alpha("gray70", 0.3)),
+    panel.grid.minor = element_line(color = scales::alpha("gray70", 0.15)),
+    panel.background = element_blank(),
+    panel.spacing = unit(1.2, "lines"),
+    legend.position = "bottom",
+    legend.margin = margin(t = -5, r = 0, b = 0, l = 0),
+    legend.spacing.y = unit(0.2, "cm"),
+  ) +
+  guides(fill = guide_legend(title=""), color = guide_legend(title=""))
+
+ggsave(
+  '../plots/04_resp_prob_plot_exp2_rt_total.jpeg',
+  resp_prob_plot_exp2_rt_total,
   device = 'jpeg', dpi = 300,
   width = 6, height = 4
 )
