@@ -1,9 +1,9 @@
 parameter,median,q5,q95
-Intercept,0.22,0.12,0.33
-beta[Session],-0.11,-0.24,0.02
-beta[Repetition * phantom(.) * status],0.63,0.51,0.75
-beta[Factual * phantom(.) * truth],0.17,0.04,0.29
-beta[Session:Repetition * phantom(.) * status],0.61,0.39,0.83
-beta[Repetition * phantom(.) * status:Factual * phantom(.) * truth],-0.06,-0.25,0.12
-beta[Session:Factual * phantom(.) * truth],-0.13,-0.39,0.11
-beta[Session:Repetition * phantom(.) * status:Factual * phantom(.) * truth],0.19,-0.17,0.57
+Intercept,0.54,0.44,0.63
+beta[Session],-0.1,-0.15,-0.05
+beta[Repetition * phantom(.) * status],0.31,0.25,0.37
+beta[Factual * phantom(.) * truth],-0.07,-0.11,-0.02
+beta[Session:Repetition * phantom(.) * status],-0.15,-0.21,-0.09
+beta[Repetition * phantom(.) * status:Factual * phantom(.) * truth],0.02,-0.03,0.07
+beta[Session:Factual * phantom(.) * truth],-0.01,-0.06,0.04
+beta[Session:Repetition * phantom(.) * status:Factual * phantom(.) * truth],0.02,-0.03,0.08
