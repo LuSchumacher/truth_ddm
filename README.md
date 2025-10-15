@@ -17,4 +17,4 @@ This work was supported by the Deutsche Forschungsgemeinschaft (DFG, German Rese
 
 ## License
 
-MIT
+Apache-2.0 license 
