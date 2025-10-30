@@ -198,6 +198,27 @@ BF_table <- tibble(
 
 write_csv(BF_table, "../tables/ddm_bayes_factors.csv")
 
+draw_df_s1 <- as_tibble(draws_session_1) %>% 
+  select(PARAM_NAMES)
+draw_df_s2 <- as_tibble(draws_session_2) %>% 
+  select(PARAM_NAMES)
+
+diff_df <- draw_df_s1 %>%
+  mutate(across(everything(), ~ .x - draw_df_s2[[cur_column()]]))
+
+prior_sd <- sqrt(0.5^2 + 0.5^2)
+
+summary_df <- diff_df %>%
+  pivot_longer(everything(), names_to = "parameter", values_to = "value") %>%
+  group_by(parameter) %>%
+  summarise(
+    median = median(value),
+    ci_lower = quantile(value, 0.025),
+    ci_upper = quantile(value, 0.975),
+    BF = calc_BF(value, prior_sd = prior_sd),
+    .groups = "drop"
+  )
+
 ################################################################################
 # PLOT EFFECTS: EXPERIMENT 1
 ################################################################################
