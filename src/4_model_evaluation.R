@@ -198,17 +198,21 @@ BF_table <- tibble(
 
 write_csv(BF_table, "../tables/ddm_bayes_factors.csv")
 
+# posteriors session 1 and 2
 draw_df_s1 <- as_tibble(draws_session_1) %>% 
   select(PARAM_NAMES)
 draw_df_s2 <- as_tibble(draws_session_2) %>% 
   select(PARAM_NAMES)
 
+# calculate difference between session 1 and 2
 diff_df <- draw_df_s1 %>%
   mutate(across(everything(), ~ .x - draw_df_s2[[cur_column()]]))
 
+# prior of difference
 prior_sd <- sqrt(0.5^2 + 0.5^2)
 
-summary_df <- diff_df %>%
+# calculate Bayes Factor
+effect_diff_summary <- diff_df %>%
   pivot_longer(everything(), names_to = "parameter", values_to = "value") %>%
   group_by(parameter) %>%
   summarise(
@@ -218,6 +222,21 @@ summary_df <- diff_df %>%
     BF = calc_BF(value, prior_sd = prior_sd),
     .groups = "drop"
   )
+
+# Reformat
+effect_labels <- c("1" = "repetition", "2" = "factual_truth", "3" = "interaction")
+effect_diff_summary_clean <- effect_diff_summary %>%
+  filter(grepl("^(v|a|ndt|ndt_var|bias)_betas", parameter)) %>%
+  mutate(
+    effect = sub(".*\\[(\\d)\\]$", "\\1", parameter),
+    effect = effect_labels[effect],
+    parameter = sub("\\[\\d\\]", "", parameter),
+    parameter = sub("_betas$", "", parameter)
+  ) %>%
+  select(parameter, effect, median, ci_lower, ci_upper, BF)
+
+write_csv(effect_diff_summary_clean, "../tables/effect_session_differences.csv")
+
 
 ################################################################################
 # PLOT EFFECTS: EXPERIMENT 1
