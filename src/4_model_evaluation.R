@@ -237,7 +237,6 @@ effect_diff_summary_clean <- effect_diff_summary %>%
 
 write_csv(effect_diff_summary_clean, "../tables/effect_session_differences.csv")
 
-
 ################################################################################
 # PLOT EFFECTS: EXPERIMENT 1
 ################################################################################
