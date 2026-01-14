@@ -96,10 +96,10 @@ transformed parameters {
     mu_ndt[t]     = ndt_intercept + ndt_beta * effect_coding[t];
     mu_ndt_var[t] = ndt_var_intercept + ndt_var_beta * effect_coding[t];
     
-    v[t] = mu_v[t] + s_v * z_v;
-    a[t] = log1p_exp(mu_a[t] + s_a * z_a);
-    ndt[t] = mu_ndt[t] + s_ndt * z_ndt;
-    ndt_var[t] = log1p_exp(mu_ndt_var[t] + s_ndt_var * z_ndt_var);
+    v[t]       = (mu_v[t] + s_v * z_v)';
+    a[t]       = log1p_exp((mu_a[t] + s_a * z_a)');
+    ndt[t]     = minRT[t].* trel[t];
+    ndt_var[t] = log1p_exp((mu_ndt_var[t] + s_ndt_var * z_ndt_var)');
   }
   
   for (cell in 1:4) {

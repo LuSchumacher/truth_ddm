@@ -53,17 +53,17 @@ PARAM_NAMES <- c(
 
 truth_ddm <- cmdstan_model(
   '../model/truth_ddm.stan',
-  cpp_options = list(stan_threads = T)
+  cpp_options = list(stan_threads = T),
+  force_recompile = TRUE
 )
 
 ################################################################################
 # EXPERIMENT 1: SESSION 1
 ################################################################################
-df_session_1 <- read.csv('../data/data_session_1.csv')
+df_sexssion_1 <- read.csv('../data/data_session_1.csv')
 df_session_1$factual_truth <- ifelse(df_session_1$factual_truth == 1, -1, 1)
 df_session_1$stim_type <- ifelse(df_session_1$stim_type == 0, -1, 1)
 interaction_term <- df_session_1$factual_truth * df_session_1$stim_type
-df_session_1$factual_truth <- ifelse(df_session_1$factual_truth == -1, 1, 2)
 
 
 N <- length(unique(df_session_1$id))

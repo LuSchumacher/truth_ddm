@@ -89,12 +89,6 @@ PARAM_NAMES_BIAS <- c(
   "ndt_var_intercept", "ndt_var_beta"
 )
 
-truth_ddm_bias <- cmdstan_model(
-  '../model/truth_ddm_restricted_bias',
-  cpp_options = list(stan_threads = T),
-  force_recompile = TRUE
-)
-
 PARAM_NAMES_DRIFT <- c(
   "v_intercept", "v_betas[1]", "v_betas[2]", "v_betas[3]",
   "a_intercept", "a_beta",
@@ -103,8 +97,14 @@ PARAM_NAMES_DRIFT <- c(
   "ndt_var_intercept", "ndt_var_beta"
 )
 
+truth_ddm_bias <- cmdstan_model(
+  '../model/truth_ddm_restricted_bias.stan',
+  cpp_options = list(stan_threads = T),
+  force_recompile = TRUE
+)
+
 truth_ddm_drift <- cmdstan_model(
-  '../model/truth_ddm_restricted_drift',
+  '../model/truth_ddm_restricted_drift.stan',
   cpp_options = list(stan_threads = T),
   force_recompile = TRUE
 )
