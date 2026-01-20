@@ -130,7 +130,11 @@ stan_data <- list(
   truth         = df_session_1$factual_truth,
   condition     = df_session_1$condition,
   rt            = df_session_1$rt,
-  minRT         = tapply(df_session_1$rt, list(df_session_1$factual_truth, df_session_1$id), min)
+  minRT         = tapply(
+    df_session_1$rt,
+    list(df_session_1$factual_truth, df_session_1$id),
+    min
+  )
 )
 
 fit_bias <- truth_ddm_bias$sample(

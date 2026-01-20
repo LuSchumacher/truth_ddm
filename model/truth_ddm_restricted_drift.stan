@@ -1,21 +1,24 @@
 functions {
   real partial_sum_fullddm(
     array[] real rt_slice, int start, int end, matrix a, matrix v, matrix bias,
-    array[] real t0, array[] int subject_id, array[] int resp, array[] int condition
+    array[] real t0, array[] int subject_id, array[] int resp,
+    array[] int condition, array[] int truth
   ) {
     real ans = 0;
     for (i in start:end) {
+      int c = condition[i];
+      int t = truth[i];
       if (resp[i] == 1) {
         ans += wiener_lpdf(
-          rt_slice[i+1-start] | a[condition[i], subject_id[i]],
-          t0[i], bias[condition[i], subject_id[i]],
-          v[condition[i], subject_id[i]], 0, 0, 0
+          rt_slice[i+1-start] | a[t, subject_id[i]],
+          t0[i], bias[t, subject_id[i]],
+          v[c, subject_id[i]], 0, 0, 0
         );
       } else {
         ans += wiener_lpdf(
-          rt_slice[i+1-start] | a[condition[i], subject_id[i]],
-          t0[i], 1-bias[condition[i], subject_id[i]],
-          -v[condition[i], subject_id[i]], 0, 0, 0
+          rt_slice[i+1-start] | a[t, subject_id[i]],
+          t0[i], 1 - bias[t, subject_id[i]],
+          -v[c, subject_id[i]], 0, 0, 0
         );
       }
     }
@@ -24,15 +27,14 @@ functions {
 }
 
 data {
-  int<lower=1>                    T;
-  int<lower=1>                    N;
-  array[T] real<lower=0>          rt;
-  array[T] int<lower=1>           subject_id;
-  array[T] int<lower=0, upper=1>  resp;
-  array[T] int<lower=-1, upper=1> truth;
-  array[T] int<lower=-1, upper=1> repetition;
-  array[T] int<lower=1, upper=4>  condition;
-  matrix<lower=0>[4, N]           minRT;
+  int<lower=1>                   T;
+  int<lower=1>                   N;
+  array[T] real<lower=0>         rt;
+  array[T] int<lower=1>          subject_id;
+  array[T] int<lower=0, upper=1> resp;
+  array[T] int<lower=1, upper=2> truth;
+  array[T] int<lower=1, upper=4> condition;
+  matrix<lower=0>[2, N]          minRT;
 }
 
 parameters {
@@ -41,16 +43,16 @@ parameters {
   vector[3] v_betas;
   real      sigma_v;
   real      a_intercept;
-  vector[3] a_betas;
+  real      a_beta;
   real      sigma_a;
   real      bias_intercept;
-  vector[3] bias_betas;
+  real      bias_beta;
   real      sigma_bias;
   real      ndt_intercept;
-  vector[3] ndt_betas;
+  real      ndt_beta;
   real      sigma_ndt;
   real      ndt_var_intercept;
-  vector[3] ndt_var_betas;
+  real      ndt_var_beta;
   real      sigma_ndt_var;
 
   // Subject-level random effects
@@ -61,7 +63,7 @@ parameters {
   vector[N] z_ndt_var;
 
   vector<lower=0, upper=1>[T] s; // for t0 per trial
-  matrix<lower=0, upper=1>[4, N] trel; // for minRT
+  matrix<lower=0, upper=1>[2, N] trel; // for minRT
 }
 
 transformed parameters {
@@ -73,16 +75,33 @@ transformed parameters {
   
   // Condition specific parameters
   vector[4] mu_v;
-  vector[4] mu_a;
-  vector[4] mu_bias;
-  vector[4] mu_ndt;
-  vector[4] mu_ndt_var;
+  vector[2] mu_a;
+  vector[2] mu_bias;
+  vector[2] mu_ndt;
+  vector[2] mu_ndt_var;
   // Subject specific parameters
   matrix[4, N] v;
-  matrix[4, N] a;
-  matrix[4, N] bias;
-  matrix[4, N] ndt;
-  matrix[4, N] ndt_var;
+  matrix[2, N] a;
+  matrix[2, N] bias;
+  matrix[2, N] ndt;
+  matrix[2, N] ndt_var;
+  
+  vector[2] effect_coding;
+  effect_coding[1] = -1;
+  effect_coding[2] =  1;
+  
+  for (t in 1:2) {
+
+    mu_a[t]       = a_intercept + a_beta * effect_coding[t];
+    mu_ndt[t]     = ndt_intercept + ndt_beta * effect_coding[t];
+    mu_ndt_var[t] = ndt_var_intercept + ndt_var_beta * effect_coding[t];
+    mu_bias[t]    = bias_intercept + bias_beta * effect_coding[t];
+    
+    bias[t]    = (inv_logit(mu_bias[t] + s_bias * z_bias))';
+    a[t]       = log1p_exp((mu_a[t] + s_a * z_a)');
+    ndt[t]     = minRT[t].* trel[t];
+    ndt_var[t] = log1p_exp((mu_ndt_var[t] + s_ndt_var * z_ndt_var)');
+  }
   
   for (cell in 1:4) {
     // condition (1-4) coding
@@ -90,22 +109,8 @@ transformed parameters {
     x_cell[1] = (cell == 1 || cell == 3) ? -1 : 1; // repetition
     x_cell[2] = (cell >= 3) ? -1 : 1;              // truth
     x_cell[3] = x_cell[1] * x_cell[2];             // interaction
-  
-    mu_v[cell]       = v_intercept       + dot_product(v_betas, x_cell);
-    mu_a[cell]       = a_intercept       + dot_product(a_betas, x_cell);
-    mu_bias[cell]    = bias_intercept    + dot_product(bias_betas, x_cell);
-    mu_ndt[cell]     = ndt_intercept     + dot_product(ndt_betas, x_cell);
-    mu_ndt_var[cell] = ndt_var_intercept + dot_product(ndt_var_betas, x_cell);
-    
-    // Subject specific parameters
-    // for (subj in 1:N) {
-    v[cell]       = (mu_v[cell] + s_v * z_v)';
-    a[cell]       = (log1p_exp(mu_a[cell] + s_a * z_a))';
-    bias[cell]    = (inv_logit(mu_bias[cell] + s_bias * z_bias))';
-    ndt[cell]     = minRT[cell].* trel[cell];
-    ndt_var[cell] = (log1p_exp(mu_ndt_var[cell] + s_ndt_var * z_ndt_var))';
-    // }
-  
+    mu_v[cell] = v_intercept + dot_product(v_betas, x_cell);
+    v[cell] = (mu_v[cell] + s_v * z_v)';
   }
 }
 
@@ -114,16 +119,16 @@ model {
   v_betas              ~ normal(0, 0.5);
   sigma_v              ~ normal(0, 1);
   a_intercept          ~ normal(2, 1);
-  a_betas              ~ normal(0, 0.5);
+  a_beta               ~ normal(0, 0.5);
   sigma_a              ~ normal(0, 1);
   bias_intercept       ~ normal(0, 1);
-  bias_betas           ~ normal(0, 0.5);
+  bias_beta            ~ normal(0, 0.5);
   sigma_bias           ~ normal(0, 1);
   ndt_intercept        ~ normal(1, 1);
-  ndt_betas            ~ normal(0, 0.5);
+  ndt_beta             ~ normal(0, 0.5);
   sigma_ndt            ~ normal(0, 1);
   ndt_var_intercept    ~ normal(1, 1);
-  ndt_var_betas        ~ normal(0, 0.5);
+  ndt_var_beta         ~ normal(0, 0.5);
   sigma_ndt_var        ~ normal(0, 1);
   to_vector(z_v)       ~ std_normal();
   to_vector(z_a)       ~ std_normal();
@@ -131,34 +136,36 @@ model {
   to_vector(z_ndt)     ~ std_normal();
   to_vector(z_ndt_var) ~ std_normal();
   
-  for (i in 1:4) {
+  for (i in 1:2) {
     ndt[i] ~ normal(mu_ndt[i], s_ndt);
   }
   
   s ~ uniform(0, 1);
   array[T] real t0;
   for (i in 1:T)  {
-    t0[i] = ndt[condition[i], subject_id[i]] + s[i] * ndt_var[condition[i], subject_id[i]];
+    t0[i] = ndt[truth[i], subject_id[i]] + s[i] * ndt_var[truth[i], subject_id[i]];
   }
 
   target += reduce_sum(
     partial_sum_fullddm, rt, 1,
-    a, v, bias, t0, subject_id, resp, condition
+    a, v, bias, t0, subject_id, resp, condition, truth
   );
 }
 
 generated quantities {
-  vector[4] transf_mu_v;
-	vector[4] transf_mu_a;
-	vector[4] transf_mu_ndt;
+  vector[2] transf_mu_v;
+	vector[2] transf_mu_a;
+	vector[2] transf_mu_ndt;
 	vector[4] transf_mu_bias;
-	vector[4] transf_mu_ndt_var;
+	vector[2] transf_mu_ndt_var;
 
-  for (i in 1:4) {
-    transf_mu_v[i]       = mu_v[i];
+  for (i in 1:2) {
     transf_mu_a[i]       = log1p_exp(mu_a[i]);
-    transf_mu_bias[i]    = inv_logit(mu_bias[i]);
     transf_mu_ndt[i]     = mu_ndt[i];
     transf_mu_ndt_var[i] = log1p_exp(mu_ndt_var[i]);
+    transf_mu_bias[i]    = inv_logit(mu_bias[i]);
+  }
+  for (i in 1:4) {
+    transf_mu_v[i]       = mu_v[i];
   }
 }

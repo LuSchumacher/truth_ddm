@@ -149,10 +149,16 @@ model {
 
 generated quantities {
   vector[4] transf_mu_v;
-	vector[4] transf_mu_a;
-	vector[4] transf_mu_ndt;
-	vector[4] transf_mu_bias;
-	vector[4] transf_mu_ndt_var;
+  vector[4] transf_mu_a;
+  vector[4] transf_mu_ndt;
+  vector[4] transf_mu_bias;
+  vector[4] transf_mu_ndt_var;
+
+  matrix[4, N] indiv_transf_v;
+  matrix[4, N] indiv_transf_a;
+  matrix[4, N] indiv_transf_bias;
+  matrix[4, N] indiv_transf_ndt;
+  matrix[4, N] indiv_transf_ndt_var;
 
   for (i in 1:4) {
     transf_mu_v[i]       = mu_v[i];
@@ -161,4 +167,10 @@ generated quantities {
     transf_mu_ndt[i]     = mu_ndt[i];
     transf_mu_ndt_var[i] = log1p_exp(mu_ndt_var[i]);
   }
+  
+  indiv_transf_v = v;
+  indiv_transf_a = a;
+  indiv_transf_bias = bias;
+  indiv_transf_ndt = ndt;
+  indiv_transf_ndt_var = ndt_var;
 }
