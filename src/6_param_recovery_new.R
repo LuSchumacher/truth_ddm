@@ -51,7 +51,10 @@ set.seed(1991)
 # ---------------------------------------------------------------------------- #
 # PARAMETER SAMPLING
 # ---------------------------------------------------------------------------- #
-group_level_draws <- fit_session_1$draws(format = "draws_df", variables = GROUP_PARAM_NAMES)
+group_level_draws <- fit_session_1$draws(
+  format = "draws_df",
+  variables = GROUP_PARAM_NAMES
+)
 
 group_df <- as_draws_df(group_level_draws)
 print(colnames(group_df))
@@ -238,7 +241,6 @@ df_sim <- df_sim %>%
     by = c("sim_id", "id", "condition")
   )
 
-
 sim_data <- df_sim %>%
   rowwise() %>%
   mutate(
@@ -263,6 +265,8 @@ write_csv(sim_data, "../generated_data/param_recovery_new/sim_data_recovery.csv"
 # ---------------------------------------------------------------------------- #
 # MODEL FITTING
 # ---------------------------------------------------------------------------- #
+sim_data <- read_csv("../generated_data/param_recovery_new/sim_data_recovery.csv")
+
 init_fun <- function(chains = 4, n) {
   L <- vector("list", chains)
   for (i in 1:chains) {
@@ -338,7 +342,7 @@ for (i in 1:NUM_SIM) {
     threads_per_chain = 2
   )
 
-  fit_sim_data$save_object(paste0("../fits/param_recovery/fit_sim_data_", i, ".rds"))
+  fit_sim_data$save_object(paste0("../fits/param_recovery_new/fit_sim_data_", i, ".rds"))
 
   group_param_estimates <- fit_sim_data$summary(variables = GROUP_PARAM_NAMES)
   group_param_estimates <- group_param_estimates %>%
@@ -350,22 +354,57 @@ for (i in 1:NUM_SIM) {
     ) %>%
     select(sim_id, condition, parameter, median) %>%
     arrange(sim_id, parameter, condition)
-
-  write_csv(group_param_estimates, paste0("../data/param_recovery/group_param_estimates_recovery_", i, ".csv"))
-
+  write_csv(
+    group_param_estimates,
+    paste0("../generated_data/param_recovery_new/group_param_estimates_recovery_", i, ".csv")
+  )
+  
+  draws <- fit_sim_data$draws()
+  draws_df <- as_draws_df(draws) %>%
+    select(starts_with("indiv_transf_"))
+  
+  individual_param_estimates <- draws_df %>%
+    pivot_longer(
+      cols = everything(),
+      names_to = "param",
+      values_to = "value"
+    ) %>%
+    mutate(
+      parameter = str_match(param, "indiv_transf_(.*)\\[")[,2],
+      condition = as.integer(str_match(param, "\\[(\\d+),")[,2]),
+      subject_id = as.integer(str_match(param, ",(\\d+)\\]")[,2])
+    ) %>%
+    group_by(parameter, condition, subject_id) %>%
+    summarise(
+      median = median(value),
+      .groups = "drop"
+    ) %>%
+    mutate(sim_id = i) %>%
+    select(
+      sim_id,
+      parameter,
+      condition,
+      subject_id,
+      median
+    )
+  write_csv(
+    individual_param_estimates,
+    paste0("../generated_data/param_recovery_new/individual_param_estimates_recovery_", i, ".csv")
+  )
   print(paste("Fitting Nr.", i, "finished"))
 }
 
+# ---------------------------------------------------------------------------- #
+# EVALUATION: GROUP-LEVEL PARAMETERS
+# ---------------------------------------------------------------------------- #
+group_params <- read_csv(
+  "../generated_data/param_recovery_new/true_group_params.csv"
+)
 
-
-
-################################################################################
-# EVALUATION
-################################################################################
 recovery_params <- group_params %>%
   select(
     sim_id, condition, mu_v,
-    tranf_mu_a, tranf_mu_bias, tranf_mu_ndt, tranf_mu_ndt_var
+    mu_a, mu_bias, mu_ndt, mu_ndt_var
   ) %>%
   pivot_longer(
     cols = -c(sim_id, condition),
@@ -374,14 +413,14 @@ recovery_params <- group_params %>%
   ) %>%
   mutate(parameter = case_when(
     parameter == "mu_v" ~ "v",
-    parameter == "tranf_mu_a" ~ "a",
-    parameter == "tranf_mu_ndt" ~ "ndt",
-    parameter == "tranf_mu_ndt_var" ~ "ndt_var",
-    parameter == "tranf_mu_bias" ~ "bias",
+    parameter == "mu_a" ~ "a",
+    parameter == "mu_ndt" ~ "ndt",
+    parameter == "mu_ndt_var" ~ "ndt_var",
+    parameter == "mu_bias" ~ "bias",
   )) %>%
   arrange(sim_id, parameter, condition)
 
-path <- "../generated_data/param_recovery/"
+path <- "../generated_data/param_recovery_new/"
 files <- list.files(path, pattern = "group_param_estimates_recovery")
 pred_params <- read_csv(paste0(path, files)) %>% 
   arrange(sim_id, parameter, condition)
@@ -394,17 +433,17 @@ recovery_params <- recovery_params %>%
     parameter = factor(parameter, c("v","a","bias","ndt","ndt_var"))
   )
 
-r2_scores <- recovery_params %>%
+corr_scores <- recovery_params %>%
   group_by(parameter) %>%
   summarise(
-    r2 = cor(value_true, value_pred)^2
+    r = cor(value_true, value_pred)
   )
 
 recovery_params <- recovery_params %>%
-  left_join(r2_scores, by = "parameter") %>% 
+  left_join(corr_scores, by = "parameter") %>% 
   mutate(
     param_label = PARAM_LABELS[parameter],
-    r2_label = paste0("R² = ", sprintf("%.2f", r2))
+    corr_label = paste0("r = ", sprintf("%.2f", r))
   )
 
 combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
@@ -420,9 +459,9 @@ combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
     data = recovery_params %>% group_by(parameter) %>% summarize(
       x = min(value_true),
       y = max(value_pred),
-      r2_label = unique(r2_label)
+      corr_label = unique(corr_label)
     ),
-    mapping = aes(x = x, y = y, label = r2_label),
+    mapping = aes(x = x, y = y, label = corr_label),
     hjust = 0, vjust = 1,
     size = 6,
     fontface = "italic",
@@ -434,7 +473,7 @@ combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
   scale_x_continuous(n.breaks = 4) +
   ggthemes::theme_tufte() +
   theme(
-    axis.line = element_line(size = .5, color = "#969696"),
+    axis.line = element_line(linewidth = .5, color = "#969696"),
     axis.ticks = element_line(color = "#969696"),
     axis.text.x = element_text(size = FONT_SIZE_3),
     axis.text.y = element_text(size = FONT_SIZE_3),
@@ -452,7 +491,99 @@ combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
   )
 
 ggsave(
-  "../plots/06_parameter_recovery_plot.jpeg",
+  "../plots/06_parameter_recovery_new_plot.jpeg",
+  plot = combined_plot,
+  width = 14, height = 3.5, dpi = 300,
+  device = "jpeg"
+)
+
+# ---------------------------------------------------------------------------- #
+# EVALUATION: INDIVIDUAL PARAMETERS
+# ---------------------------------------------------------------------------- #
+individual_params <- read_csv(
+  "../generated_data/param_recovery_new/true_individual_params.csv"
+)
+
+recovery_params <- individual_params %>%
+  pivot_longer(
+    cols = -c(sim_id, id, condition),
+    names_to = "parameter",
+    values_to = "value_true"
+  ) %>%
+  arrange(sim_id, id, parameter, condition)
+
+path <- "../generated_data/param_recovery_new/"
+files <- list.files(path, pattern = "individual_param_estimates_recovery")
+pred_params <- read_csv(paste0(path, files)) %>% 
+  arrange(sim_id, subject_id, parameter, condition)
+
+recovery_params <- recovery_params %>%
+  mutate(
+    value_pred = pred_params$median,
+    param_label = recode(parameter, !!!PARAM_LABELS),
+    param_label = factor(param_label),
+    parameter = factor(parameter, c("v","a","bias","ndt","ndt_var"))
+  )
+
+corr_scores <- recovery_params %>%
+  group_by(parameter) %>%
+  summarise(
+    r = cor(value_true, value_pred)
+  )
+
+recovery_params <- recovery_params %>%
+  left_join(corr_scores, by = "parameter") %>% 
+  mutate(
+    param_label = PARAM_LABELS[parameter],
+    corr_label = paste0("r = ", sprintf("%.2f", r))
+  )
+
+combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
+  geom_point(alpha = 0.6) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
+  facet_wrap(
+    ~ parameter,
+    scales = "free",
+    ncol = 5,
+    labeller = as_labeller(PARAM_LABELS, default = label_parsed)
+  ) +
+  geom_text(
+    data = recovery_params %>% group_by(parameter) %>% summarize(
+      x = min(value_true),
+      y = max(value_pred),
+      corr_label = unique(corr_label)
+    ),
+    mapping = aes(x = x, y = y, label = corr_label),
+    hjust = 0, vjust = 1,
+    size = 6,
+    fontface = "italic",
+    family = "Palatino",
+    color = "black",
+    inherit.aes = FALSE
+  ) +
+  labs(x = "True", y = "Estimated") +
+  scale_x_continuous(n.breaks = 4) +
+  ggthemes::theme_tufte() +
+  theme(
+    axis.line = element_line(linewidth = .5, color = "#969696"),
+    axis.ticks = element_line(color = "#969696"),
+    axis.text.x = element_text(size = FONT_SIZE_3),
+    axis.text.y = element_text(size = FONT_SIZE_3),
+    strip.text.x = element_text(size = FONT_SIZE_2),
+    strip.text.y = element_text(size = FONT_SIZE_2, angle = 0),
+    text = element_text(size = FONT_SIZE_2),
+    plot.title = element_text(size = FONT_SIZE_1,
+                              hjust = 0.5,
+                              face = 'bold'),
+    panel.grid.major = element_line(color = alpha("gray70", 0.3)),
+    panel.grid.minor = element_line(color = alpha("gray70", 0.15)),
+    panel.background = element_blank(),
+    legend.spacing.y = unit(0.25, 'cm'),
+    panel.spacing = unit(1., "lines")
+  )
+
+ggsave(
+  "../plots/06_parameter_recovery_new_individual_plot.jpeg",
   plot = combined_plot,
   width = 14, height = 3.5, dpi = 300,
   device = "jpeg"

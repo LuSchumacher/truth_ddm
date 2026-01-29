@@ -82,7 +82,7 @@ resimulate_session <- function(df, params, num_resims = 200, n_cond = 4) {
 
 extract_param_3d_subset <- function(fit, name, n_id, idx, n_cond = 4) {
   dm <- fit$draws(variables = name, format = "draws_matrix") |> as.matrix()
-  dm <- dm[idx, , drop = FALSE]  # only keep sampled draws
+  dm <- dm[idx, , drop = FALSE]
   cols <- colnames(dm)
   m <- stringr::str_match(cols, paste0("^", name, "\\[(\\d+),(\\d+)\\]$"))
   i <- as.integer(m[,2]); j <- as.integer(m[,3])
