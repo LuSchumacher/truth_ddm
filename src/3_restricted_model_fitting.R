@@ -544,61 +544,61 @@ ggplot(
   geom_line(
     linewidth = 0.8,
     alpha = 0.6,
-    color = COLOR_PALETTE[3]
+    aes(color = "Observed")
   ) +
   geom_point(
     shape = 4,
     size = 3,
     stroke = 1.3,
-    color = COLOR_PALETTE[3]
+    aes(color = "Observed")
   ) +
   geom_line(
     data = caf_pred_bias,
     aes(
       x = rt,
       y = mean,
-      group = stim_type
+      group = stim_type,
+      color = "Only bias modulation"
     ),
     inherit.aes = FALSE,
     linewidth = 1.0,
-    linetype = "dashed",
-    color = COLOR_PALETTE[1]
+    linetype = "dashed"
   ) +
   geom_point(
     data = caf_pred_bias,
     aes(
       x = rt,
-      y = mean
+      y = mean,
+      color = "Only bias modulation"
     ),
     inherit.aes = FALSE,
     shape = 4,
     size = 3,
-    stroke = 1.3,
-    color = COLOR_PALETTE[1]
+    stroke = 1.3
   ) +
   geom_line(
     data = caf_pred_drift,
     aes(
       x = rt,
       y = mean,
-      group = stim_type
+      group = stim_type,
+      color = "Only drift modulation"
     ),
     inherit.aes = FALSE,
     linewidth = 1.0,
-    linetype = "dashed",
-    color = COLOR_PALETTE[2]
+    linetype = "dashed"
   ) +
   geom_point(
     data = caf_pred_drift,
     aes(
       x = rt,
-      y = mean
+      y = mean,
+      color = "Only drift modulation"
     ),
     inherit.aes = FALSE,
     shape = 4,
     size = 3,
-    stroke = 1.3,
-    color = COLOR_PALETTE[2]
+    stroke = 1.3
   ) +
   facet_grid(
     stim_type ~ .,
@@ -607,6 +607,19 @@ ggplot(
         "0" = "New\nstatements",
         "1" = "Repeated\nstatements"
       )
+    )
+  ) +
+  scale_color_manual(
+    name = "",
+    breaks = c(
+      "Observed",
+      "Only bias modulation",
+      "Only drift modulation"
+    ),
+    values = c(
+      "Only bias modulation" = COLOR_PALETTE[1],
+      "Only drift modulation" = COLOR_PALETTE[2],
+      "Observed" = COLOR_PALETTE[3]
     )
   ) +
   labs(
