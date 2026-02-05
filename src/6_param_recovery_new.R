@@ -57,7 +57,6 @@ group_level_draws <- fit_session_1$draws(
 )
 
 group_df <- as_draws_df(group_level_draws)
-print(colnames(group_df))
 num_chains <- 4
 num_iter_per_chain <- 3000
 
@@ -206,6 +205,7 @@ group_params <- group_long %>%
   rename(
     sim_id = draw
   )
+
 individual_params <- individuals_long %>%
   filter(draw %in% sampled_draws) %>% 
   mutate(draw = dense_rank(draw)) %>% 
