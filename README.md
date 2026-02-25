@@ -10,6 +10,7 @@ This repository contains the data and code for reproducing all results reported 
 - [Cognitive model evaluation](src/4_model_evaluation.R): Evaluation of the DDM parameter estimates.
 - [Posterior re-simulation](src/5_post_resimulation.R): Evaluation of the DDMs absolute fit to observed data via posterior re-simulations.
 - [Parameter recovery study](src/6_param_recovery.R): Evaluation of the DDMs identifiability via parameter recovery study.
+- [Qualitive analysis](src/7_qualitative_analysis.R): Simulation study assessing different effects of varying drift rate or starting point.
 
 ## Support
 
