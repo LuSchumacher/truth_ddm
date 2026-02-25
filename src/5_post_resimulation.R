@@ -4,6 +4,7 @@ library(bayesplot)
 library(tidybayes)
 library(progress)
 library(posterior)
+library(ggh4x)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("0_ddm_simulator.R")
@@ -155,28 +156,28 @@ pred_data_exp_2_rt_total <- read_csv("../generated_data/pred_data_exp_2_rt_total
 quantiles <- c(0.1, 0.3, 0.5, 0.7, 0.9)
 
 emp_rt_summaries_s1 <- df_session_1 %>%
-  group_by(stim_type) %>%
+  group_by(stim_type, resp) %>%
   summarise(
     rt_quantiles = list(quantile(rt, probs = quantiles)),
     .groups = "drop"
   ) %>%
   unnest_wider(rt_quantiles) %>%
   pivot_longer(
-    cols = -stim_type,
+    cols = -c(stim_type, resp),
     names_to = "quantile",
     values_to = "rt"
   ) %>%
   mutate(session = 1)
 
 emp_rt_summaries_s2 <- df_session_2 %>%
-  group_by(stim_type) %>%
+  group_by(stim_type, resp) %>%
   summarise(
     rt_quantiles = list(quantile(rt, probs = quantiles)),
     .groups = "drop"
   ) %>%
   unnest_wider(rt_quantiles) %>%
   pivot_longer(
-    cols = -stim_type,
+    cols = -c(stim_type, resp),
     names_to = "quantile",
     values_to = "rt"
   ) %>%
@@ -188,14 +189,14 @@ emp_rt_summaries_exp1 <- bind_rows(emp_rt_summaries_s1, emp_rt_summaries_s2) %>%
   )
 
 emp_rt_summaries_exp2 <- df_exp_2 %>%
-  group_by(stim_type) %>%
+  group_by(stim_type, resp) %>%
   summarise(
     rt_quantiles = list(quantile(rt, probs = quantiles)),
     .groups = "drop"
   ) %>%
   unnest_wider(rt_quantiles) %>%
   pivot_longer(
-    cols = -stim_type,
+    cols = -c(stim_type, resp),
     names_to = "quantile",
     values_to = "rt"
   ) %>% 
@@ -204,14 +205,14 @@ emp_rt_summaries_exp2 <- df_exp_2 %>%
   )
 
 emp_rt_summaries_exp2_rt_total <- df_exp_2 %>%
-  group_by(stim_type) %>%
+  group_by(stim_type, resp) %>%
   summarise(
     rt_quantiles = list(quantile(rt_total, probs = quantiles)),
     .groups = "drop"
   ) %>%
   unnest_wider(rt_quantiles) %>%
   pivot_longer(
-    cols = -stim_type,
+    cols = -c(stim_type, resp),
     names_to = "quantile",
     values_to = "rt"
   ) %>% 
@@ -223,7 +224,7 @@ emp_rt_summaries_exp2_rt_total <- df_exp_2 %>%
 # RT QUANTILES PLOT: EXPERIMENT 1
 ################################################################################
 pred_rt_summaries_s1 <- pred_data_session_1 %>%
-  group_by(resim_id, stim_type) %>%
+  group_by(resim_id, stim_type, resp) %>%
   summarise(
     q10 = quantile(rt, 0.1),
     q30 = quantile(rt, 0.3),
@@ -233,7 +234,7 @@ pred_rt_summaries_s1 <- pred_data_session_1 %>%
     .groups = "drop"
   ) %>%
   pivot_longer(cols = starts_with("q"), names_to = "quantile", values_to = "rt") %>%
-  group_by(stim_type, quantile) %>%
+  group_by(stim_type, resp, quantile) %>%
   summarise(
     mean = mean(rt),
     q_lower = quantile(rt, 0.025),
@@ -243,7 +244,7 @@ pred_rt_summaries_s1 <- pred_data_session_1 %>%
   mutate(session = 1)
 
 pred_rt_summaries_s2 <- pred_data_session_2 %>%
-  group_by(resim_id, stim_type) %>%
+  group_by(resim_id, stim_type, resp) %>%
   summarise(
     q10 = quantile(rt, 0.1),
     q30 = quantile(rt, 0.3),
@@ -253,7 +254,7 @@ pred_rt_summaries_s2 <- pred_data_session_2 %>%
     .groups = "drop"
   ) %>%
   pivot_longer(cols = starts_with("q"), names_to = "quantile", values_to = "rt") %>%
-  group_by(stim_type, quantile) %>%
+  group_by(stim_type, resp, quantile) %>%
   summarise(
     mean = mean(rt),
     q_lower = quantile(rt, 0.025),
@@ -284,18 +285,14 @@ rt_quantile_plot_exp1 <- ggplot(pred_rt_summaries, aes(x = as.factor(quantile), 
     name = NULL,
     values = c("Observed" = COLOR_PALETTE[2], "Re-simulated" = COLOR_PALETTE[1])
   ) +
-  facet_grid(
-    stim_type ~ session,
+  facet_nested(
+    stim_type ~ session + resp, 
     labeller = labeller(
-      stim_type = c(
-        "0" = "New\nstatements",
-        "1" = "Repeated\nstatements"
-      ),
-      session = c(
-        "1" = "Session 1\n(10 minute interval)",
-        "2" = "Session 2\n(1 week interval)"
-      )
-    )
+      stim_type = c("0" = "New\nstatements", "1" = "Repeated\nstatements"),
+      session = c("1" = "Session 1\n(10 min)", "2" = "Session 2\n(1 week)"),
+      resp = c("0" = "Response = False", "1" = "Response = True")
+    ),
+    nest_line = FALSE
   ) +
   labs(
     x = "Quantile",
@@ -324,14 +321,14 @@ ggsave(
   '../plots/03_rt_quantiles_exp_1.jpeg',
   rt_quantile_plot_exp1,
   device = 'jpeg', dpi = 300,
-  width = 8, height = 5
+  width = 10, height = 5
 )
 
 ################################################################################
 # RT QUANTILES PLOT: EXPERIMENT 2
 ################################################################################
 pred_rt_summaries_exp2 <- pred_data_exp_2 %>%
-  group_by(resim_id, stim_type) %>%
+  group_by(resim_id, stim_type, resp) %>%
   summarise(
     q10 = quantile(rt, 0.1),
     q30 = quantile(rt, 0.3),
@@ -341,7 +338,7 @@ pred_rt_summaries_exp2 <- pred_data_exp_2 %>%
     .groups = "drop"
   ) %>%
   pivot_longer(cols = starts_with("q"), names_to = "quantile", values_to = "rt") %>%
-  group_by(stim_type, quantile) %>%
+  group_by(stim_type, resp, quantile) %>%
   summarise(
     mean = mean(rt),
     q_lower = quantile(rt, 0.025),
@@ -370,11 +367,15 @@ rt_quantile_plot_exp2 <- ggplot(pred_rt_summaries_exp2, aes(x = as.factor(quanti
     values = c("Observed" = COLOR_PALETTE[2], "Re-simulated" = COLOR_PALETTE[1])
   ) +
   facet_grid(
-    stim_type ~ .,
+    stim_type ~ resp,
     labeller = labeller(
       stim_type = c(
         "0" = "New\nstatements",
         "1" = "Repeated\nstatements"
+      ),
+      resp = c(
+        "0" = "Response = False",
+        "1" = "Response = True"
       )
     )
   ) +
@@ -405,14 +406,14 @@ ggsave(
   '../plots/03_rt_quantiles_exp_2.jpeg',
   rt_quantile_plot_exp2,
   device = 'jpeg', dpi = 300,
-  width = 6, height = 4
+  width = 8, height = 5
 )
 
 ################################################################################
 # RT QUANTILES PLOT: EXPERIMENT 2: COMBINED RT (EXPLORATIVE)
 ################################################################################
 pred_rt_summaries_exp2_rt_total <- pred_data_exp_2_rt_total %>%
-  group_by(resim_id, stim_type) %>%
+  group_by(resim_id, stim_type, resp) %>%
   summarise(
     q10 = quantile(rt, 0.1),
     q30 = quantile(rt, 0.3),
@@ -422,7 +423,7 @@ pred_rt_summaries_exp2_rt_total <- pred_data_exp_2_rt_total %>%
     .groups = "drop"
   ) %>%
   pivot_longer(cols = starts_with("q"), names_to = "quantile", values_to = "rt") %>%
-  group_by(stim_type, quantile) %>%
+  group_by(stim_type, resp, quantile) %>%
   summarise(
     mean = mean(rt),
     q_lower = quantile(rt, 0.025),
@@ -451,11 +452,15 @@ rt_quantile_plot_exp2_rt_total <- ggplot(pred_rt_summaries_exp2_rt_total, aes(x 
     values = c("Observed" = COLOR_PALETTE[2], "Re-simulated" = COLOR_PALETTE[1])
   ) +
   facet_grid(
-    stim_type ~ .,
+    stim_type ~ resp,
     labeller = labeller(
       stim_type = c(
         "0" = "New\nstatements",
         "1" = "Repeated\nstatements"
+      ),
+      resp = c(
+        "0" = "Response = False",
+        "1" = "Response = True"
       )
     )
   ) +
@@ -486,7 +491,7 @@ ggsave(
   '../plots/03_rt_quantile_plot_exp2_rt_total.jpeg',
   rt_quantile_plot_exp2_rt_total,
   device = 'jpeg', dpi = 300,
-  width = 6, height = 4
+  width = 8, height = 5
 )
 
 ################################################################################
