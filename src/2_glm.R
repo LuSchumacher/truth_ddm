@@ -151,9 +151,9 @@ bf_plot <- fixed_effects %>%
   # posterior dot at 0 (only if density > threshold)
   geom_point(data = fixed_effects %>% filter(y > dot_threshold),
              aes(x = 0, y = y),
-             size = 3, shape = 21, fill = COLOR_PALETTE[2]) +
+             size = 3, shape = 21, fill = "black") +
   # prior dot at 0
-  geom_point(aes(x = 0, y = prior_density_0), size = 3, shape = 21, fill = COLOR_PALETTE[2]) +
+  geom_point(aes(x = 0, y = prior_density_0), size = 3, shape = 21, fill = "black") +
   # Bayes factor text (fixed y = 10)
   geom_text(aes(label = bf, x = text_loc_x),
             y = 10,
@@ -230,8 +230,6 @@ model_exp2 <- brm(
   sample_prior = "yes"
 )
 
-model_exp2
-
 # ----- Hypothesis tests -----
 hyp_rep <- "stim_type1 = 0"
 bf_rep <- 1 / hypothesis(model_exp2, hyp_rep)$hypothesis["Evid.Ratio"]
@@ -293,8 +291,8 @@ bf_plot <- fixed_effects %>%
   stat_function(fun = dnorm, args = list(mean = 0, sd = prior_sd),
                 xlim = c(-1.5, 1.5), linewidth = 1, linetype = "dashed") +
   geom_point(data = fixed_effects %>% filter(y > dot_threshold),
-             aes(x = 0, y = y), size = 3, shape = 21, fill = COLOR_PALETTE[2]) +
-  geom_point(aes(x = 0, y = prior_density_0), size = 3, shape = 21, fill = COLOR_PALETTE[2]) +
+             aes(x = 0, y = y), size = 3, shape = 21, fill = "black") +
+  geom_point(aes(x = 0, y = prior_density_0), size = 3, shape = 21, fill = "black") +
   geom_text(aes(label = bf, x = text_loc_x),
             y = 10, family = "serif", size = 5, alpha = 0.8) +
   scale_x_continuous(expand = c(0.05, 0.05), limits = c(-0.5, 0.5)) +

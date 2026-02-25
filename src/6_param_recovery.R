@@ -448,7 +448,7 @@ recovery_params <- recovery_params %>%
 
 combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
   geom_point(alpha = 0.6) +
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
   facet_wrap(
     ~ parameter,
     scales = "free",
@@ -540,7 +540,7 @@ recovery_params <- recovery_params %>%
 
 combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
   geom_point(alpha = 0.6) +
-  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "firebrick") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
   facet_wrap(
     ~ parameter,
     scales = "free",

@@ -94,7 +94,7 @@ PARAM_LABELS <- c(
 FONT_SIZE_1 <- 22
 FONT_SIZE_2 <- 20
 FONT_SIZE_3 <- 18
-COLOR_PALETTE <- c('#27374D', '#B70404')
+COLOR_PALETTE <- c("#000000", "#9E9E9E")
 
 ################################################################################
 # POSTERIOR SUMMARIES
@@ -264,7 +264,7 @@ post <- post %>%
   )
 
 effects_plot_exp1 <- ggplot(post, aes(x = value_diff, fill = session, color = session)) +
-  geom_density(alpha = 0.65, linewidth = 0.6) +
+  geom_density(alpha = 0.8, linewidth = 0.6) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray40") +
   facet_grid(
     param ~ effect,

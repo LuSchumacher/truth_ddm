@@ -26,7 +26,7 @@ fit_exp_2_rt_total <- as_draws_matrix(fit_exp_2_rt_total)
 FONT_SIZE_1 <- 22
 FONT_SIZE_2 <- 20
 FONT_SIZE_3 <- 18
-COLOR_PALETTE <- c('#27374D', '#B70404')
+COLOR_PALETTE <- c("#000000", "#9E9E9E")
 
 NUM_RESIMS <- 200
 NUM_POST_SAMPLES <- 12000
@@ -274,16 +274,16 @@ SMALLER_FONT <- 6
 rt_quantile_plot_exp1 <- ggplot(pred_rt_summaries, aes(x = as.factor(quantile), y = mean)) +
   geom_pointrange(
     aes(ymin = q_lower, ymax = q_upper, color = "Re-simulated"),
-    linewidth = 1.2, fatten = 3.5, alpha = 0.9
+    linewidth = 1.2, fatten = 3.5, alpha = 1
   ) +
   geom_point(
     data = emp_rt_summaries_exp1,
     aes(x = as.factor(quantile), y = rt, color = "Observed"),
-    size = 2, alpha = 0.7
+    size = 2, alpha = 1
   ) +
   scale_color_manual(
     name = NULL,
-    values = c("Observed" = COLOR_PALETTE[2], "Re-simulated" = COLOR_PALETTE[1])
+    values = c("Observed" = COLOR_PALETTE[1], "Re-simulated" = COLOR_PALETTE[2])
   ) +
   facet_nested(
     stim_type ~ session + resp, 
@@ -321,7 +321,7 @@ ggsave(
   '../plots/03_rt_quantiles_exp_1.jpeg',
   rt_quantile_plot_exp1,
   device = 'jpeg', dpi = 300,
-  width = 10, height = 5
+  width = 10, height = 5.5
 )
 
 ################################################################################
@@ -355,16 +355,16 @@ SMALLER_FONT <- 6
 rt_quantile_plot_exp2 <- ggplot(pred_rt_summaries_exp2, aes(x = as.factor(quantile), y = mean)) +
   geom_pointrange(
     aes(ymin = q_lower, ymax = q_upper, color = "Re-simulated"),
-    linewidth = 1.2, fatten = 3.5, alpha = 0.9
+    linewidth = 1.2, fatten = 3.5, alpha = 1
   ) +
   geom_point(
     data = emp_rt_summaries_exp2,
     aes(x = as.factor(quantile), y = rt, color = "Observed"),
-    size = 2, alpha = 0.7
+    size = 2, alpha = 1
   ) +
   scale_color_manual(
     name = NULL,
-    values = c("Observed" = COLOR_PALETTE[2], "Re-simulated" = COLOR_PALETTE[1])
+    values = c("Observed" = COLOR_PALETTE[1], "Re-simulated" = COLOR_PALETTE[2])
   ) +
   facet_grid(
     stim_type ~ resp,
@@ -440,16 +440,16 @@ SMALLER_FONT <- 6
 rt_quantile_plot_exp2_rt_total <- ggplot(pred_rt_summaries_exp2_rt_total, aes(x = as.factor(quantile), y = mean)) +
   geom_pointrange(
     aes(ymin = q_lower, ymax = q_upper, color = "Re-simulated"),
-    linewidth = 1.2, fatten = 3.5, alpha = 0.9
+    linewidth = 1.2, fatten = 3.5, alpha = 1
   ) +
   geom_point(
     data = emp_rt_summaries_exp2_rt_total,
     aes(x = as.factor(quantile), y = rt, color = "Observed"),
-    size = 2, alpha = 0.7
+    size = 2, alpha = 1
   ) +
   scale_color_manual(
     name = NULL,
-    values = c("Observed" = COLOR_PALETTE[2], "Re-simulated" = COLOR_PALETTE[1])
+    values = c("Observed" = COLOR_PALETTE[1], "Re-simulated" = COLOR_PALETTE[2])
   ) +
   facet_grid(
     stim_type ~ resp,
@@ -564,7 +564,7 @@ resp_prob_plot <- summary_df %>%
               data = indiviudal_emp_resp_prob,
               width = 0.1,
               size = 2,
-              alpha = 0.4) + 
+              alpha = 0.6) + 
   geom_pointinterval(aes(x = stim_type, y = resp_prob,
                          ymin = lower_ci,
                          ymax = upper_ci),
@@ -662,7 +662,7 @@ resp_prob_plot_exp2 <- summary_df_exp2 %>%
     data = indiviudal_emp_resp_prob_exp2,
     aes(x = stim_type, y = resp_prob),
     color = COLOR_PALETTE[1],
-    width = 0.1, size = 2, alpha = 0.4
+    width = 0.1, size = 2, alpha = 0.6
   ) + 
   geom_pointinterval(
     aes(ymin = lower_ci, ymax = upper_ci),
@@ -758,7 +758,7 @@ resp_prob_plot_exp2_rt_total <- summary_df_exp2_rt_total %>%
     data = indiviudal_emp_resp_prob_exp2,
     aes(x = stim_type, y = resp_prob),
     color = COLOR_PALETTE[1],
-    width = 0.1, size = 2, alpha = 0.4
+    width = 0.1, size = 2, alpha = 0.6
   ) + 
   geom_pointinterval(
     aes(ymin = lower_ci, ymax = upper_ci),
