@@ -77,18 +77,8 @@ df_long <- df %>%
     values_to = "value"
   )
 
-ggplot(df_long, aes(x = q, y = value, linetype = effect)) +
+plot <- ggplot(df_long, aes(x = q, y = value, linetype = effect)) +
   geom_line(linewidth = 1.0) +
-  # scale_color_manual(
-  #   values = c(
-  #     drift_effect = COLOR_PALETTE[1],
-  #     startpoint_effect = COLOR_PALETTE[2]
-  #   ),
-  #   labels = c(
-  #     drift_effect = "Effect on drift rate",
-  #     startpoint_effect = "Effect on starting point"
-  #   )
-  # ) +
   scale_linetype_manual(
     values = c(
       drift_effect = "solid",
@@ -126,7 +116,23 @@ ggplot(df_long, aes(x = q, y = value, linetype = effect)) +
   )
 
 ggsave(
-  '../plots/07_qualitative_effect_rt_quantiles.jpeg',
-  device = 'jpeg', dpi = 300,
-  width = 8.5, height = 5.5
+  '../plots/07_qualitative_effect_rt_quantiles.eps',
+  plot,
+  device = cairo_ps,
+  dpi = 600,
+  width = 8.5,
+  height = 5.5,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/07_qualitative_effect_rt_quantiles.pdf',
+  plot,
+  device = "pdf",
+  dpi = 600,
+  width = 8.5,
+  height = 5.5,
+  units = "in",
+  bg = "white"
 )
