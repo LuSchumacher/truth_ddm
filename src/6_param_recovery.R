@@ -491,10 +491,25 @@ combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
   )
 
 ggsave(
-  "../plots/06_parameter_recovery_group.jpeg",
-  plot = combined_plot,
-  width = 14, height = 3.5, dpi = 300,
-  device = "jpeg"
+  '../plots/06_parameter_recovery_group.eps',
+  combined_plot,
+  device = cairo_ps,
+  dpi = 600,
+  width = 14,
+  height = 3.5,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/06_parameter_recovery_group.pdf',
+  combined_plot,
+  device = "pdf",
+  dpi = 600,
+  width = 14,
+  height = 3.5,
+  units = "in",
+  bg = "white"
 )
 
 # ---------------------------------------------------------------------------- #
@@ -583,8 +598,23 @@ combined_plot <- ggplot(recovery_params, aes(x = value_true, y = value_pred)) +
   )
 
 ggsave(
-  "../plots/06_parameter_recovery_individual.jpeg",
-  plot = combined_plot,
-  width = 14, height = 3.5, dpi = 300,
-  device = "jpeg"
+  '../plots/06_parameter_recovery_individual.eps',
+  combined_plot,
+  device = cairo_ps,
+  dpi = 600,
+  width = 14,
+  height = 3.5,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/06_parameter_recovery_individual.pdf',
+  combined_plot,
+  device = "pdf",
+  dpi = 600,
+  width = 14,
+  height = 3.5,
+  units = "in",
+  bg = "white"
 )

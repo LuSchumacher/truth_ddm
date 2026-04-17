@@ -293,7 +293,7 @@ rt_quantile_plot_exp1 <- ggplot(pred_rt_summaries, aes(x = as.factor(quantile), 
       resp = c("0" = "Response = False", "1" = "Response = True")
     ),
     nest_line = FALSE
-  ) +
+  ) + 
   labs(
     x = "Quantile",
     y = "Response time (s)"
@@ -318,10 +318,25 @@ rt_quantile_plot_exp1 <- ggplot(pred_rt_summaries, aes(x = as.factor(quantile), 
   )
 
 ggsave(
-  '../plots/03_rt_quantiles_exp_1.jpeg',
+  '../plots/03_rt_quantiles_exp_1.eps',
   rt_quantile_plot_exp1,
-  device = 'jpeg', dpi = 300,
-  width = 10, height = 5.5
+  device = cairo_ps,
+  dpi = 600,
+  width = 10,
+  height = 5.5,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/03_rt_quantiles_exp_1.pdf',
+  rt_quantile_plot_exp1,
+  device = "pdf",
+  dpi = 600,
+  width = 10,
+  height = 5.5,
+  units = "in",
+  bg = "white"
 )
 
 ################################################################################
@@ -403,10 +418,25 @@ rt_quantile_plot_exp2 <- ggplot(pred_rt_summaries_exp2, aes(x = as.factor(quanti
   )
 
 ggsave(
-  '../plots/03_rt_quantiles_exp_2.jpeg',
+  '../plots/03_rt_quantiles_exp_2.eps',
   rt_quantile_plot_exp2,
-  device = 'jpeg', dpi = 300,
-  width = 8, height = 5
+  device = cairo_ps,
+  dpi = 600,
+  width = 8,
+  height = 5,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/03_rt_quantiles_exp_2.pdf',
+  rt_quantile_plot_exp2,
+  device = "pdf",
+  dpi = 600,
+  width = 8,
+  height = 5,
+  units = "in",
+  bg = "white"
 )
 
 ################################################################################
@@ -488,10 +518,25 @@ rt_quantile_plot_exp2_rt_total <- ggplot(pred_rt_summaries_exp2_rt_total, aes(x 
   )
 
 ggsave(
-  '../plots/03_rt_quantile_plot_exp2_rt_total.jpeg',
+  '../plots/03_rt_quantile_plot_exp2_rt_total.eps',
   rt_quantile_plot_exp2_rt_total,
-  device = 'jpeg', dpi = 300,
-  width = 8, height = 5
+  device = cairo_ps,
+  dpi = 600,
+  width = 8,
+  height = 5,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/03_rt_quantile_plot_exp2_rt_total.pdf',
+  rt_quantile_plot_exp2_rt_total,
+  device = "pdf",
+  dpi = 600,
+  width = 8,
+  height = 5,
+  units = "in",
+  bg = "white"
 )
 
 ################################################################################
@@ -602,10 +647,25 @@ resp_prob_plot <- summary_df %>%
          color = guide_legend(title=""))
 
 ggsave(
-  '../plots/04_resp_prob_exp_1.jpeg',
+  '../plots/04_resp_prob_exp_1.eps',
   resp_prob_plot,
-  device = 'jpeg', dpi = 300,
-  width = 12, height = 6
+  device = cairo_ps,
+  dpi = 600,
+  width = 12,
+  height = 6,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/04_resp_prob_exp_1.pdf',
+  resp_prob_plot,
+  device = "pdf",
+  dpi = 600,
+  width = 12,
+  height = 6,
+  units = "in",
+  bg = "white"
 )
 
 ################################################################################
@@ -695,12 +755,26 @@ resp_prob_plot_exp2 <- summary_df_exp2 %>%
   guides(fill = guide_legend(title=""), color = guide_legend(title=""))
 
 ggsave(
-  '../plots/04_resp_prob_exp_2.jpeg',
+  '../plots/04_resp_prob_exp_2.eps',
   resp_prob_plot_exp2,
-  device = 'jpeg', dpi = 300,
-  width = 6, height = 4
+  device = cairo_ps,
+  dpi = 600,
+  width = 6,
+  height = 4,
+  units = "in",
+  bg = "white"
 )
 
+ggsave(
+  '../plots/04_resp_prob_exp_2.pdf',
+  resp_prob_plot_exp2,
+  device = "pdf",
+  dpi = 600,
+  width = 6,
+  height = 4,
+  units = "in",
+  bg = "white"
+)
 
 ################################################################################
 # RESPONSE PROBABILITY PLOT: EXPERIMENT 2: COMBINED RT (EXPLORATIVE)
@@ -791,8 +865,23 @@ resp_prob_plot_exp2_rt_total <- summary_df_exp2_rt_total %>%
   guides(fill = guide_legend(title=""), color = guide_legend(title=""))
 
 ggsave(
-  '../plots/04_resp_prob_plot_exp2_rt_total.jpeg',
+  '../plots/04_resp_prob_plot_exp2_rt_total.eps',
   resp_prob_plot_exp2_rt_total,
-  device = 'jpeg', dpi = 300,
-  width = 6, height = 4
+  device = cairo_ps,
+  dpi = 600,
+  width = 6,
+  height = 4,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/04_resp_prob_plot_exp2_rt_total.pdf',
+  resp_prob_plot_exp2_rt_total,
+  device = "pdf",
+  dpi = 600,
+  width = 6,
+  height = 4,
+  units = "in",
+  bg = "white"
 )

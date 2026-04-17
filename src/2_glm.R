@@ -183,11 +183,26 @@ bf_plot <- fixed_effects %>%
   )
 
 ggsave(
-  "../plots/01_glm_exp1.jpeg",
+  '../plots/01_glm_exp1.eps',
   bf_plot,
-  dpi=300, width = 12, height = 8
+  device = cairo_ps,
+  dpi = 600,
+  width = 12,
+  height = 8,
+  units = "in",
+  bg = "white"
 )
 
+ggsave(
+  '../plots/01_glm_exp1.pdf',
+  bf_plot,
+  device = "pdf",
+  dpi = 600,
+  width = 12,
+  height = 8,
+  units = "in",
+  bg = "white"
+)
 
 post_summaries <- fixed_effects %>% 
   group_by(parameter) %>% 
@@ -316,7 +331,27 @@ bf_plot <- fixed_effects %>%
     panel.spacing = unit(1,"lines")
   )
 
-ggsave("../plots/01_glm_exp2.jpeg", bf_plot, dpi = 300, width = 12, height = 3)
+ggsave(
+  '../plots/01_glm_exp2.eps',
+  bf_plot,
+  device = cairo_ps,
+  dpi = 600,
+  width = 12,
+  height = 3,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/01_glm_exp2.pdf',
+  bf_plot,
+  device = "pdf",
+  dpi = 600,
+  width = 12,
+  height = 3,
+  units = "in",
+  bg = "white"
+)
 
 # ----- Posterior summaries -----
 post_summaries <- fixed_effects %>%
@@ -349,8 +384,6 @@ model_reading_time_exp2 <- brm(
   file = "../fits/hlm_fit_reading_time_exp2",
   sample_prior = "yes"
 )
-
-model_reading_time_exp2
 
 hyp_rep <- "stim_type1 = 0"
 test_rep <- hypothesis(model_reading_time_exp2, hyp_rep)$hypothesis

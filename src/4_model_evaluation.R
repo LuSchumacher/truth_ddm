@@ -56,15 +56,6 @@ extract_posteriors <- function(fit, param_names, session_label) {
   bind_rows(df_list)
 }
 
-# summarize_param <- function(fit, param_name, cond_indices) {
-#   draws <- as.matrix(fit)[, param_name]
-#   sapply(cond_indices, function(idx) {
-#     median_val <- round(median(draws[, idx]), 2)
-#     ci <- round(quantile(draws[, idx], probs = c(0.025, 0.975)), 2)
-#     sprintf("%0.2f [%0.2f, %0.2f]", median_val, ci[1], ci[2])
-#   })
-# }
-
 fit_session_1 <- readRDS("../fits/fit_session_1.rds")
 fit_session_2 <- readRDS("../fits/fit_session_2.rds")
 fit_exp_2 <- readRDS("../fits/fit_exp_2.rds")
@@ -296,11 +287,27 @@ effects_plot_exp1 <- ggplot(post, aes(x = value_diff, fill = session, color = se
   )
 
 ggsave(
-  '../plots/02_effects_exp_1.jpeg',
+  '../plots/02_effects_exp_1.eps',
   effects_plot_exp1,
-  device = 'jpeg', dpi = 300,
-  width = 12, height = 9
+  device = cairo_ps,
+  dpi = 600,
+  width = 12,
+  height = 8,
+  units = "in",
+  bg = "white"
 )
+
+ggsave(
+  '../plots/02_effects_exp_1.pdf',
+  effects_plot_exp1,
+  device = "pdf",
+  dpi = 600,
+  width = 12,
+  height = 8,
+  units = "in",
+  bg = "white"
+)
+
 
 ################################################################################
 # PLOT EFFECTS: EXPERIMENT 2
@@ -354,12 +361,26 @@ effects_plot_exp2 <- ggplot(post_exp2, aes(x = value_diff)) +
   )
 
 ggsave(
-  '../plots/02_effects_exp_2.jpeg',
+  '../plots/02_effects_exp_2.eps',
   effects_plot_exp2,
-  device = 'jpeg', dpi = 300,
-  width = 12, height = 9
+  device = cairo_ps,
+  dpi = 600,
+  width = 12,
+  height = 9,
+  units = "in",
+  bg = "white"
 )
 
+ggsave(
+  '../plots/02_effects_exp_2.pdf',
+  effects_plot_exp2,
+  device = "pdf",
+  dpi = 600,
+  width = 12,
+  height = 9,
+  units = "in",
+  bg = "white"
+)
 
 ################################################################################
 # PLOT EFFECTS: EEXPERIMENT 2: COMBINED RT (EXPLORATIVE)
@@ -413,8 +434,23 @@ effects_plot_exp2_rt_total <- ggplot(post_exp2_rt_total, aes(x = value_diff)) +
   )
 
 ggsave(
-  '../plots/02_effects_exp_2_rt_total.jpeg',
+  '../plots/02_effects_exp_2_rt_total.eps',
   effects_plot_exp2_rt_total,
-  device = 'jpeg', dpi = 300,
-  width = 12, height = 9
+  device = cairo_ps,
+  dpi = 600,
+  width = 12,
+  height = 9,
+  units = "in",
+  bg = "white"
+)
+
+ggsave(
+  '../plots/02_effects_exp_2_rt_total.pdf',
+  effects_plot_exp2_rt_total,
+  device = "pdf",
+  dpi = 600,
+  width = 12,
+  height = 9,
+  units = "in",
+  bg = "white"
 )
